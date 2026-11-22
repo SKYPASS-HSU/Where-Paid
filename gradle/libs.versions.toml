@@ -10,6 +10,7 @@ navigationCompose = "2.9.3"
 room = "2.7.2"
 coroutines = "1.10.2"
 junit = "4.13.2"
+kakaoMap = "2.15.2"
 androidxTestRunner = "1.6.2"
 androidxTestExtJunit = "1.2.1"
 
@@ -31,6 +32,7 @@ kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-cor
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+kakao-maps = { group = "com.kakao.maps.open", name = "android", version.ref = "kakaoMap" }
 androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "androidxTestRunner" }
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestExtJunit" }
 

@@ -93,6 +93,16 @@ keytool -exportcert -alias wherepaid -keystore keystore/team.jks | openssl sha1 
 ### 카카오 키
 카카오 개발자 콘솔의 팀 공용 앱 1개를 같이 씁니다. **앱 키** 메뉴의 "네이티브 앱 키"와 "REST API 키"를 `local.properties`에 넣습니다. 키는 팀 채널에서 받으세요.
 
+### 지도가 안 뜰 때
+지도 자리에 "지도를 불러오지 못했어요"와 원인 한 줄이 나옵니다.
+- **"local.properties에 kakao.nativeAppKey를 넣어 주세요"**: 네이티브 앱 키가 비어 있습니다.
+- **"패키지명과 키 해시가 등록됐는지 확인해 주세요 (401)"**: 팀 키가 아닌 키로 서명됐거나, 카카오 콘솔에 키 해시가 없습니다. 빌드할 때 "팀 서명 키가 설정되지 않아…" 경고가 나오는지 보세요.
+- **에뮬레이터에서 "잠시 후 다시 열어 주세요"**: 에뮬레이터 안에서 주소 찾기(DNS)가 안 되는 경우가 있습니다(IPv6 망 등). `adb shell ping -c1 google.com`이 `unknown host`면 에뮬레이터를 DNS 서버를 지정해서 다시 켜세요.
+  ```bash
+  ~/Library/Android/sdk/emulator/emulator -avd <AVD 이름> -dns-server 8.8.8.8,1.1.1.1
+  ```
+- 카카오맵 SDK는 **ARM 전용**입니다(arm64-v8a, armeabi-v7a). 에뮬레이터는 ARM 시스템 이미지(Apple Silicon Mac 기본값)를 쓰세요.
+
 ---
 
 ## 3. 구조

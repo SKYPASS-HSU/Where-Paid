@@ -61,4 +61,14 @@ data class WherePaidTypography(
     val caption12: TextStyle = style(12.sp, FontWeight.Normal),
     /** 지도 핀 이름표, 지역 라벨 */
     val label11: TextStyle = style(11.sp, FontWeight.SemiBold, lineHeight = 1.3f),
+    /** 지도 줌 버튼 + − */
+    val zoom20: TextStyle = style(20.sp, FontWeight.Medium, lineHeight = 1.3f),
+    /** 링크·칩 끝의 › */
+    val chevron16: TextStyle = style(16.sp, FontWeight.Medium, lineHeight = 1.3f),
+    /** 큰 매장 핀 안 금액 (지름 56 이상, "6.2만") */
+    val pinAmountLarge: TextStyle = style(15.sp, FontWeight.Bold, lineHeight = 1.3f),
+    /** 작은 매장 핀 안 금액 ("1만") */
+    val pinAmountSmall: TextStyle = style(12.sp, FontWeight.Bold, lineHeight = 1.3f),
+    /** 느낌표 핀의 ! (시안 ExtraBold 17을 Bold로) */
+    val pinMark: TextStyle = style(17.sp, FontWeight.Bold, lineHeight = 1.3f),
 )
