@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Android 11(API 30) 이하의 자동 백업 범위. 12 이상은 data_extraction_rules.xml을 쓴다.
+    결제 기록(Room DB)과 앱 설정(SharedPreferences)만 본인 Google 계정에 백업한다 (분석서 NFR-02).
+    캐시와 그 밖의 파일은 백업하지 않는다.
+-->
+<full-backup-content>
+    <include domain="database" path="." />
+    <include domain="sharedpref" path="." />
+</full-backup-content>

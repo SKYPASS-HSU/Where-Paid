@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!--
         권한과 알림 리스너 서비스는 아직 없다. 기능을 구현하는 모듈의 매니페스트에 추가한다.
@@ -9,12 +10,16 @@
     <!-- 오프라인 안내와 매칭 대기 재검색을 위한 연결 상태 확인 (일반 권한, 사용자에게 묻지 않음) -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+    <!-- 자동 백업: 결제 기록(Room)과 앱 설정만 본인 Google 계정에 보존한다. 범위는 res/xml의 두 파일. -->
     <application
         android:name=".WherePaidApp"
         android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        android:theme="@android:style/Theme.Material.Light.NoActionBar"
+        tools:targetApi="31">
 
         <!-- 카카오맵 SDK용 네이티브 앱 키. local.properties의 kakao.nativeAppKey에서 들어온다. -->
         <meta-data

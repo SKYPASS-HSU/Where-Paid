@@ -151,6 +151,13 @@ wherepaid.useFakeData=false
 3. PR을 올리면 **Android**(테스트 + APK 빌드)와 **Claude Review**(자동 리뷰)가 돕니다.
 4. Claude 리뷰를 확인하고 팀원 1명의 승인을 받은 뒤 병합합니다.
 
+병합할 때:
+- 병합 버튼은 **Create a merge commit**만 켜져 있습니다.
+- 순서는 **[Update branch] → `build` 통과 → 승인 → 병합**입니다. 새 커밋(업데이트 포함)이 올라오면 받은 승인이 풀립니다.
+- **"Merge without waiting for requirements (bypass rules)"는 체크하지 않습니다.**
+- 다른 PR 위에 쌓은 PR은 앞 PR부터 병합하고, 앞 PR이 병합되면 PR 제목 옆 ✏ → base를 `main`으로 바꾼 뒤 병합합니다.
+- 모델·인터페이스(`Contracts.kt`, `Models.kt`)를 바꾸는 PR은 담당 전원이 확인한 뒤 병합합니다.
+
 자주 쓰는 명령은 [CLAUDE.md](CLAUDE.md)에 있습니다.
 
 ### APK 배포
@@ -178,5 +185,6 @@ APK는 GitHub Actions가 빌드합니다. 아래 둘 중 하나를 하면 몇 �
 
 그 밖에:
 - [Claude GitHub App](https://github.com/apps/claude)을 이 저장소에 설치합니다 (Claude Review가 PR에 코멘트를 남기려면 필요).
-- **Settings → Branches**에서 `main` 브랜치 보호를 켭니다: PR 필수, 승인 1명, Android 워크플로 통과 필수.
+- **Settings → Branches**에서 `main` 브랜치 보호를 켭니다: PR 필수, 승인 1명, 새 커밋 시 승인 해제, 필수 검사 `build`(Android 워크플로의 job 이름), 브랜치 최신 상태 필수.
+- **Settings → General → Pull Requests**에서 "Allow merge commits"만 켜고 Squash·Rebase는 끕니다.
 - 카카오 개발자 콘솔에 패키지명 `com.wherepaid.app`과 팀 키의 키 해시를 등록하고, REST 키는 사용량 제한을 걸어 둡니다 (이 저장소는 공개이고 APK에 키가 들어갑니다).

@@ -82,6 +82,11 @@ Android SDK 위치는 `ANDROID_HOME` 또는 `local.properties`의 `sdk.dir`로 �
 
 ### PR
 - `main`에 직접 푸시하지 않는다. 브랜치 → PR → Claude 리뷰 확인 + 팀원 1명 승인 → 병합.
+- 병합은 **Create a merge commit**만 쓴다 (Squash·Rebase는 저장소 설정에서 꺼 두었다). 쌓인 PR의 커밋이 그대로 이어지게 하기 위해서다.
+- `main` 보호 규칙: 승인 1명, 필수 검사 `build`(Android 워크플로), 브랜치 최신 상태. 새 커밋이 올라오면 받은 승인은 풀린다. **bypass rules로 병합하지 않는다.**
+- 병합 순서: [Update branch] → `build` 통과 확인 → 승인 → 병합. 업데이트도 새 커밋이라 승인을 먼저 받으면 다시 받아야 한다.
+- 다른 PR 위에 쌓은 PR은 설명 첫 줄에 의존 PR을 적는다. 앞 PR이 병합되면 base를 `main`으로 바꾼 뒤 위 순서로 병합한다. 앞 PR부터 차례로 병합한다.
+- 승인: 자기 PR은 승인할 수 없다. `Contracts.kt`·`Models.kt`를 바꾸는 PR은 영향을 받는 담당 전원이 확인한 뒤 병합한다.
 - PR을 올리기 전에 `./gradlew build`를 통과시킨다.
 - PR 하나에는 한 가지 일만 담고, 화면을 바꿨으면 스크린샷을 붙인다.
 - Room 구조를 바꾸면 `core/data/schemas/`의 JSON을 같이 커밋한다. 첫 릴리스(`v*` 태그) 전에는 version 1을 그대로 고치고, 그 뒤로는 `version`을 올리고 마이그레이션을 추가한다.

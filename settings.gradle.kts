@@ -10,6 +10,10 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        // 카카오맵 SDK (com.kakao.maps.open:android). 카카오 패키지만 여기서 찾는다.
+        maven("https://devrepo.kakao.com/nexus/content/groups/public/") {
+            content { includeGroupByRegex("com\\.kakao\\..*") }
+        }
     }
 }
 
