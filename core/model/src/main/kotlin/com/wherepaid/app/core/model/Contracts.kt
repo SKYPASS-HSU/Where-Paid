@@ -31,6 +31,15 @@ interface PlaceResolver {
 }
 
 /**
+ * ④ 월간 리포트 칭호·요약 (:core:report). LLM 중계 서버를 부른다. 월 집계만 보낸다 (NFR-03).
+ * 리포트 화면(S-08)과 공유 카드(S-09)가 쓴다.
+ */
+interface ReportWriter {
+    /** 실패해도 예외를 던지지 않고 [ReportResult.Failed]를 돌려준다. */
+    suspend fun write(request: MonthlyReportRequest): ReportResult
+}
+
+/**
  * ④ 저장 (:core:data). 기기 DB(Room)가 원본이고 Android 자동 백업으로 보존한다. 로그인·앱 서버는 없다.
  * 사용자 동작 함수는 분석서 2-3 결제 상태 이동표를 그대로 따른다.
  */

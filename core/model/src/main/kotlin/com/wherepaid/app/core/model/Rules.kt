@@ -120,6 +120,36 @@ object Neighborhoods {
         .firstOrNull()?.first
 }
 
+/** 월간 리포트 요청 규칙 (FR-04). 리포트 화면과 테스트가 같이 쓴다. */
+object MonthlyReportRules {
+    const val MAX_CATEGORIES = 10
+    private const val OTHER = "기타"
+
+    /** 카카오 카테고리의 마지막 칸. "음식점 > 카페" → "카페", 비어 있으면 "기타". 20자로 자른다. */
+    fun categoryName(place: Place?): String =
+        place?.category?.split(">")?.last()?.trim()?.take(20)?.ifEmpty { null } ?: OTHER
+
+    /** 그 달 결제와 지난달 결제로 요청을 만든다. 지난달 결제가 없으면 [MonthlyReportRequest.previousMonthTotal]은 null. */
+    fun request(month: YearMonth, transactions: List<Transaction>, previousMonth: List<Transaction>): MonthlyReportRequest {
+        val summary = MonthSummary.of(transactions)
+        val categories = transactions
+            .filter { it.status == PlaceStatus.MAPPED }
+            .groupBy { categoryName(it.place) }
+            .map { (name, list) -> CategoryTotal(name, list.sumOf { it.netAmount }, list.size) }
+            .sortedWith(compareByDescending<CategoryTotal> { it.total }.thenBy { it.name })
+            .take(MAX_CATEGORIES)
+        val previous = MonthSummary.of(previousMonth)
+        return MonthlyReportRequest(
+            month = month,
+            offlineTotal = summary.offlineTotal,
+            onlineTotal = summary.onlineTotal,
+            paymentCount = transactions.size,
+            categories = categories,
+            previousMonthTotal = if (previousMonth.isEmpty()) null else previous.offlineTotal + previous.onlineTotal,
+        )
+    }
+}
+
 /** 두 좌표 사이 거리(m). 하버사인 공식. */
 fun distanceMeters(a: LatLng, b: LatLng): Double {
     val r = 6_371_000.0
