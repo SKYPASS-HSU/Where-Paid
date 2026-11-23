@@ -33,4 +33,7 @@ class CandidatePickerViewModel(
 
     /** [여기 아니에요] → 매칭실패함. */
     fun markNotHere() = viewModelScope.launch { repository.markNotHere(transactionId) }
+
+    /** [기억 안 나요] → 장소 확인 목록에서 뺀다 (총액에는 남음). */
+    fun markForgotten() = viewModelScope.launch { repository.markForgotten(transactionId) }
 }
