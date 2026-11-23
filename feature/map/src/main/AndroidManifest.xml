@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 카카오맵 SDK가 지도 타일과 인증을 받아 온다. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+</manifest>

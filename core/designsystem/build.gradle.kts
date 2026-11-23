@@ -35,6 +35,7 @@ dependencies {
     api(libs.androidx.compose.ui)
     api(libs.androidx.compose.material3)
     api(libs.androidx.compose.ui.tooling.preview)
+    implementation(libs.androidx.core.ktx)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
     testImplementation(libs.junit)
