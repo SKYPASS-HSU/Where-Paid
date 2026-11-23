@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -33,6 +34,7 @@ import com.wherepaid.app.feature.onboarding.OnboardingScreen
 import com.wherepaid.app.feature.placecheck.PlaceCheckRoute
 import com.wherepaid.app.feature.placecheck.find.FindPlaceRoute
 import com.wherepaid.app.feature.report.ReportScreen
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -76,6 +78,8 @@ private fun WherePaidNav(container: AppContainer) {
     val startDestination = remember { if (container.onboardingStore.isDone) Routes.MAP else Routes.ONBOARDING }
     // S-04 후보 고르기 시트는 지도와 장소 확인 어디서든 열리므로 화면 경로가 아니라 여기서 띄운다.
     var candidateSheetFor by rememberSaveable { mutableStateOf<String?>(null) }
+    // 데이터 초기화는 탭을 옮겨도 끝까지 하도록 탭 화면이 아니라 내비게이션 쪽 코루틴에서 돌린다.
+    val scope = rememberCoroutineScope()
 
     Scaffold(
         // 화면이 상태 바 영역을 직접 다룬다 (지도는 상태 바 밑까지 그린다).
@@ -112,7 +116,12 @@ private fun WherePaidNav(container: AppContainer) {
                     modifier = Modifier.statusBarsPadding(),
                 )
             }
-            composable(Routes.REPORT) { ReportScreen(Modifier.statusBarsPadding()) }
+            composable(Routes.REPORT) {
+                ReportScreen(
+                    onResetData = { scope.launch { container.transactionRepository.clearAll() } },
+                    modifier = Modifier.statusBarsPadding(),
+                )
+            }
             composable(
                 Routes.FIND_PLACE,
                 arguments = listOf(navArgument("transactionId") { type = NavType.StringType }),
