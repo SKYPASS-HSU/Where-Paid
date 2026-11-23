@@ -6,10 +6,12 @@ import com.wherepaid.app.core.data.createTransactionRepository
 import com.wherepaid.app.core.model.LocationProvider
 import com.wherepaid.app.core.model.PaymentSource
 import com.wherepaid.app.core.model.PlaceResolver
+import com.wherepaid.app.core.model.ReportWriter
 import com.wherepaid.app.core.model.TransactionRepository
 import com.wherepaid.app.core.model.fake.FakeLocationProvider
 import com.wherepaid.app.core.model.fake.FakePaymentSource
 import com.wherepaid.app.core.model.fake.FakePlaceResolver
+import com.wherepaid.app.core.model.fake.FakeReportWriter
 import com.wherepaid.app.core.model.fake.FakeTransactionRepository
 import com.wherepaid.app.feature.map.home.initKakaoMap
 import kotlinx.coroutines.flow.Flow
@@ -65,6 +67,9 @@ class AppContainer(context: Context) {
 
     // TODO(②): :core:place 구현으로 교체
     val placeResolver: PlaceResolver by lazy { FakePlaceResolver() }
+
+    // TODO(④): :core:report 구현(LLM 중계 서버)으로 교체
+    val reportWriter: ReportWriter by lazy { FakeReportWriter() }
 
     // TODO(④): paymentSource → locationProvider → transactionRepository → placeResolver를 잇는
     //  파이프라인은 아직 없다 (인계 문서 §6 데이터 흐름).
