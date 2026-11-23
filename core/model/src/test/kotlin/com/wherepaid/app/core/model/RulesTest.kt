@@ -128,4 +128,16 @@ class RulesTest {
         val request = MonthlyReportRules.request(month, sample, previous)
         assertEquals(45_000L, request.previousMonthTotal)
     }
+
+    @Test
+    fun `지난달 결제가 있고 아직 안 봤으면 지난달 리포트가 도착한 것`() {
+        val november = YearMonth.of(2026, 11)
+        val october = YearMonth.of(2026, 10)
+        assertEquals(october, ReportArrival.arrivedMonth(november, lastMonthHasPayments = true, lastSeen = null))
+        assertEquals(october, ReportArrival.arrivedMonth(november, true, lastSeen = YearMonth.of(2026, 9)))
+        assertNull(ReportArrival.arrivedMonth(november, true, lastSeen = october))
+        assertNull(ReportArrival.arrivedMonth(november, lastMonthHasPayments = false, lastSeen = null))
+        // 해가 바뀌어도 지난달
+        assertEquals(YearMonth.of(2026, 12), ReportArrival.arrivedMonth(YearMonth.of(2027, 1), true, null))
+    }
 }
