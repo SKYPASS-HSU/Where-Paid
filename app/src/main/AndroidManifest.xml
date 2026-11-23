@@ -21,11 +21,6 @@
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
         tools:targetApi="31">
 
-        <!-- 카카오맵 SDK용 네이티브 앱 키. local.properties의 kakao.nativeAppKey에서 들어온다. -->
-        <meta-data
-            android:name="com.kakao.vectormap.APP_KEY"
-            android:value="${kakaoNativeAppKey}" />
-
         <activity
             android:name=".MainActivity"
             android:exported="true"

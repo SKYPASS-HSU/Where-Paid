@@ -1,6 +1,7 @@
 package com.wherepaid.app
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -28,9 +29,14 @@ import com.wherepaid.app.core.designsystem.component.BottomTab
 import com.wherepaid.app.core.designsystem.component.WherePaidBottomBar
 import com.wherepaid.app.core.designsystem.component.WherePaidIcons
 import com.wherepaid.app.core.designsystem.theme.WherePaidTheme
-import com.wherepaid.app.feature.map.MapScreen
+import com.wherepaid.app.feature.map.home.MapBannerKind
+import com.wherepaid.app.feature.map.home.MapHomeRoute
+import com.wherepaid.app.feature.map.home.MapPin
+import com.wherepaid.app.feature.map.home.MapSignals
 import com.wherepaid.app.feature.map.candidate.CandidatePickerRoute
 import com.wherepaid.app.feature.onboarding.OnboardingScreen
+import kotlinx.coroutines.flow.combine
+import androidx.compose.ui.platform.LocalContext
 import com.wherepaid.app.feature.placecheck.PlaceCheckRoute
 import com.wherepaid.app.feature.placecheck.find.FindPlaceRoute
 import com.wherepaid.app.feature.report.ReportScreen
@@ -105,7 +111,40 @@ private fun WherePaidNav(container: AppContainer) {
                     navController.navigate(Routes.MAP) { popUpTo(Routes.ONBOARDING) { inclusive = true } }
                 })
             }
-            composable(Routes.MAP) { MapScreen() }
+            composable(Routes.MAP) {
+                val context = LocalContext.current
+                val signals = remember {
+                    combine(
+                        container.autoRecordEnabled,
+                        container.locationAlwaysAllowed,
+                        container.arrivedReport,
+                        container.networkMonitor.isOnline,
+                    ) { autoRecord, locationAlways, report, online -> MapSignals(autoRecord, locationAlways, report, online) }
+                }
+                fun soon(what: String) = Toast.makeText(context, "$what 화면은 준비 중이에요", Toast.LENGTH_SHORT).show()
+                MapHomeRoute(
+                    repository = container.transactionRepository,
+                    signals = signals,
+                    onOpenPin = { pin ->
+                        when (pin) {
+                            is MapPin.Ambiguous -> candidateSheetFor = pin.transactionId
+                            // TODO(③): S-03 핀 상세
+                            is MapPin.Store -> soon("핀 상세")
+                        }
+                    },
+                    // TODO(③): S-07 온라인 결제
+                    onOpenOnline = { soon("온라인 결제") },
+                    onOpenPlaceCheck = { navController.navigateToTab(Routes.PLACE_CHECK) },
+                    onBannerAction = { kind ->
+                        when (kind) {
+                            // TODO(①②): 알림 접근·위치 설정 화면으로 이동
+                            MapBannerKind.AutoRecordOff, MapBannerKind.LocationNotAlways -> soon("권한 설정")
+                            MapBannerKind.ReportArrived -> navController.navigateToTab(Routes.REPORT)
+                            MapBannerKind.Offline -> Unit
+                        }
+                    },
+                )
+            }
             composable(Routes.PLACE_CHECK) {
                 PlaceCheckRoute(
                     repository = container.transactionRepository,

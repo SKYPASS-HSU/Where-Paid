@@ -52,6 +52,7 @@ Android SDK 위치는 `ANDROID_HOME` 또는 `local.properties`의 `sdk.dir`로 �
 - `local.properties`의 `wherepaid.useFakeData`(기본 `true`)가 `FakeTransactionRepository`(메모리 샘플)와 Room 구현을 고른다. CI 빌드는 `false`다.
 - **저장은 확정**: 로그인·앱 서버 없음. 기기 DB(Room)가 유일한 저장소이고 Android 자동 백업(`allowBackup`)으로 보존한다. 앱 밖으로 나가는 것은 분석서 NFR-03의 네 가지(카카오 로컬 API에 가맹점명·좌표, 카카오맵에 화면 좌표, LLM 중계 서버에 월별 집계, 본인 Google 백업)뿐이다. Firebase·원격 DB 의존성을 추가하지 않는다.
 - 비밀 값(서명 키, 카카오 키)은 루트 `build.gradle.kts`가 `local.properties` → 환경변수 순으로 읽어 `rootProject.extra["secrets"]`에 둔다. 새 키가 필요하면 그 맵과 `local.properties.example`, `.github/workflows/android.yml`, README를 같이 고친다. 값이 비어 있어도 빌드는 돼야 한다.
+- 카카오맵: SDK 2.9.5부터 매니페스트 키를 읽지 않는다. 네이티브 앱 키는 `app`의 `BuildConfig.KAKAO_NATIVE_APP_KEY` → `WherePaidApp.onCreate`의 `initKakaoMap`으로 넣는다. 지도는 `feature:map`의 `KakaoMapLayer`(MapView를 감싼 것)만 쓰고, 화면은 지도를 슬롯으로 받아 미리보기에서는 `MapPlaceholder`를 쓴다. 핀 그림은 `core:designsystem`의 `MapPinBitmaps`.
 - 화면 번호(S-01 등)는 피그마 시안의 프레임 이름이다. 하단 탭과 경로는 `app`의 `MainActivity.kt`(`Routes`, `TopLevelDestination`)에 있고, 첫 실행 여부는 `OnboardingStore`.
 - 화면 작성 규칙: `XxxScreen(state, onAction…)`은 상태만 받아 그리는 함수로 두고 시안의 상태 프레임마다 `@Preview`를 만든다. 저장소 연결과 상태 계산은 같은 모듈의 `XxxRoute` + ViewModel에서 하고, ViewModel은 `AppContainer`의 인터페이스를 생성자로 받는다.
 - 지도 탭은 상태 바 밑까지 그린다. 다른 탭 화면은 `statusBarsPadding()`을 받는다 (`Scaffold`의 `contentWindowInsets`가 0).

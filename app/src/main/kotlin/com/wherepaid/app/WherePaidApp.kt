@@ -11,9 +11,19 @@ import com.wherepaid.app.core.model.fake.FakeLocationProvider
 import com.wherepaid.app.core.model.fake.FakePaymentSource
 import com.wherepaid.app.core.model.fake.FakePlaceResolver
 import com.wherepaid.app.core.model.fake.FakeTransactionRepository
+import com.wherepaid.app.feature.map.home.initKakaoMap
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import java.time.YearMonth
 
 class WherePaidApp : Application() {
     val container: AppContainer by lazy { AppContainer(this) }
+
+    override fun onCreate() {
+        super.onCreate()
+        // 카카오맵 SDK는 Application에서 한 번 초기화한다 (공식 문서 권장). 키가 없으면 지도 자리에 안내가 나온다.
+        initKakaoMap(this, BuildConfig.KAKAO_NATIVE_APP_KEY)
+    }
 }
 
 val Context.appContainer: AppContainer get() = (applicationContext as WherePaidApp).container
@@ -35,6 +45,17 @@ class AppContainer(context: Context) {
 
     /** 인터넷 연결 여부 (오프라인 안내, 매칭 대기 재검색). */
     val networkMonitor = NetworkMonitor(context)
+
+    // --- 지도 홈 배너 입력값 (분석서 NFR-04, UC-01 5a, FR-04). 아직 만들 사람이 없어 가짜 값이다. ---
+
+    // TODO(①): 알림 접근이 켜져 있는지. false면 "자동 기록이 꺼져 있어요" 배너.
+    val autoRecordEnabled: Flow<Boolean> = MutableStateFlow(true)
+
+    // TODO(②): 위치 권한이 "항상 허용"인지. false면 "위치를 항상 허용해 주세요" 배너.
+    val locationAlwaysAllowed: Flow<Boolean> = MutableStateFlow(true)
+
+    // TODO(④): 새로 도착한 월간 리포트의 달. 있으면 "○월 리포트가 도착했어요" 배너.
+    val arrivedReport: Flow<YearMonth?> = MutableStateFlow(null)
 
     // TODO(①): :core:notification 구현으로 교체
     val paymentSource: PaymentSource by lazy { FakePaymentSource() }
