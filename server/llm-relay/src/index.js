@@ -67,8 +67,12 @@ async function monthlyReport(request, env) {
   // 한도 초과(429)는 앱이 "잠시 후 다시" 안내를 할 수 있게 그대로 알려 준다. 나머지 실패는 502로 묶는다.
   if (upstream.status === 429) return json(429, { error: 'rate_limited' });
   if (!upstream.ok) {
-    console.warn(`gemini status ${upstream.status}`); // 상태 코드만 남긴다
-    return json(502, { error: 'upstream_error' });
+    // Gemini 오류 본문에는 요청 내용이 없고 오류 종류만 있다. 원인을 알 수 있게 그것만 남기고 돌려준다.
+    const err = (await upstream.json().catch(() => null))?.error;
+    const reason = typeof err?.status === 'string' ? err.status : null;
+    const detail = typeof err?.message === 'string' ? err.message.slice(0, 200) : null;
+    console.warn(`gemini status ${upstream.status} ${reason ?? ''} ${detail ?? ''}`);
+    return json(502, { error: 'upstream_error', upstreamStatus: upstream.status, reason, detail });
   }
 
   const report = extractReport(await upstream.json().catch(() => null));

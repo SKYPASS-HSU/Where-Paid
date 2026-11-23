@@ -91,6 +91,17 @@ test('정상 요청은 Gemini를 한 번 부르고 칭호·요약을 돌려준�
   }
 });
 
+test('Gemini 오류 종류를 응답에 담는다', async () => {
+  const stub = stubFetch(async () => Response.json({ error: { code: 400, status: 'FAILED_PRECONDITION', message: 'User location is not supported' } }, { status: 400 }));
+  try {
+    const res = await call(valid());
+    assert.equal(res.status, 502);
+    assert.deepEqual(await res.json(), { error: 'upstream_error', upstreamStatus: 400, reason: 'FAILED_PRECONDITION', detail: 'User location is not supported' });
+  } finally {
+    stub.restore();
+  }
+});
+
 test('Gemini 실패는 502, 한도 초과는 429, 이상한 응답은 502', async () => {
   for (const [upstream, expected] of [
     [() => new Response('x', { status: 500 }), 502],
