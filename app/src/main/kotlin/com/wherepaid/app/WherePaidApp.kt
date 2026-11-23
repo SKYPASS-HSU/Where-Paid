@@ -3,6 +3,7 @@ package com.wherepaid.app
 import android.app.Application
 import android.content.Context
 import com.wherepaid.app.core.data.createTransactionRepository
+import com.wherepaid.app.core.report.createReportWriter
 import com.wherepaid.app.core.model.LocationProvider
 import com.wherepaid.app.core.model.PaymentSource
 import com.wherepaid.app.core.model.PlaceResolver
@@ -68,8 +69,8 @@ class AppContainer(context: Context) {
     // TODO(②): :core:place 구현으로 교체
     val placeResolver: PlaceResolver by lazy { FakePlaceResolver() }
 
-    // TODO(④): :core:report 구현(LLM 중계 서버)으로 교체
-    val reportWriter: ReportWriter by lazy { FakeReportWriter() }
+    /** local.properties의 wherepaid.relayUrl이 있으면 LLM 중계 서버, 없으면 가짜 칭호·요약. */
+    val reportWriter: ReportWriter by lazy { createReportWriter() ?: FakeReportWriter() }
 
     // TODO(④): paymentSource → locationProvider → transactionRepository → placeResolver를 잇는
     //  파이프라인은 아직 없다 (인계 문서 §6 데이터 흐름).
