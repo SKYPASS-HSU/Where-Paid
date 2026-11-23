@@ -36,6 +36,7 @@ Android SDK 위치는 `ANDROID_HOME` 또는 `local.properties`의 `sdk.dir`로 �
 :core:location       ② LocationProvider 구현 자리 (GPS 1회 측정)
 :core:place          ② PlaceResolver 구현 자리 (카카오 로컬 API)
 :core:data           ④ Room + TransactionRepository 구현
+:core:report         ④ ReportWriter 구현 (LLM 중계 서버 호출)
 :feature:onboarding  ③ S-01 온보딩 (첫 실행)
 :feature:map         ③ 탭 1 지도: S-02 지도 홈, S-03 핀 상세, D-01, S-04 후보 고르기, S-07 온라인 결제
 :feature:placecheck  ③ 탭 2 장소 확인: S-05, S-06 매장 찾기, D-02
@@ -52,6 +53,7 @@ Android SDK 위치는 `ANDROID_HOME` 또는 `local.properties`의 `sdk.dir`로 �
 - 저장소 구현(가짜, Room)과 화면이 같이 쓰는 규칙은 `core/model/Rules.kt`의 순수 함수에 둔다 (월 범위는 한국 시간, 월 합계 `MonthSummary`). 규칙을 한쪽 구현에만 쓰지 않는다.
 - `local.properties`의 `wherepaid.useFakeData`(기본 `true`)가 `FakeTransactionRepository`(메모리 샘플)와 Room 구현을 고른다. CI 빌드는 `false`다.
 - **저장은 확정**: 로그인·앱 서버 없음. 기기 DB(Room)가 유일한 저장소이고 Android 자동 백업(`allowBackup`)으로 보존한다. 앱 밖으로 나가는 것은 분석서 NFR-03의 네 가지(카카오 로컬 API에 가맹점명·좌표, 카카오맵에 화면 좌표, LLM 중계 서버에 월별 집계, 본인 Google 백업)뿐이다. Firebase·원격 DB 의존성을 추가하지 않는다.
+- 중계 서버 주소·토큰은 `local.properties`의 `wherepaid.relayUrl`·`wherepaid.relayToken`(CI는 `WHEREPAID_RELAY_TOKEN` Secret)이다. 주소가 비면 `FakeReportWriter`를 쓴다.
 - 비밀 값(서명 키, 카카오 키)은 루트 `build.gradle.kts`가 `local.properties` → 환경변수 순으로 읽어 `rootProject.extra["secrets"]`에 둔다. 새 키가 필요하면 그 맵과 `local.properties.example`, `.github/workflows/android.yml`, README를 같이 고친다. 값이 비어 있어도 빌드는 돼야 한다.
 - 카카오맵: SDK 2.9.5부터 매니페스트 키를 읽지 않는다. 네이티브 앱 키는 `app`의 `BuildConfig.KAKAO_NATIVE_APP_KEY` → `WherePaidApp.onCreate`의 `initKakaoMap`으로 넣는다. 지도는 `feature:map`의 `KakaoMapLayer`(MapView를 감싼 것)만 쓰고, 화면은 지도를 슬롯으로 받아 미리보기에서는 `MapPlaceholder`를 쓴다. 핀 그림은 `core:designsystem`의 `MapPinBitmaps`.
 - 화면 번호(S-01 등)는 피그마 시안의 프레임 이름이다. 하단 탭과 경로는 `app`의 `MainActivity.kt`(`Routes`, `TopLevelDestination`)에 있고, 첫 실행 여부는 `OnboardingStore`.
@@ -68,7 +70,7 @@ Android SDK 위치는 `ANDROID_HOME` 또는 `local.properties`의 `sdk.dir`로 �
 - 화면 코드에서 색(`Color(0x…)`)·글자 크기·모서리를 직접 쓰지 않는다. `WherePaidTheme.colors`, `WherePaidTheme.typography`, `WherePaidShapes`와 `core:designsystem`의 컴포넌트를 쓰고, 없으면 피그마에서 값을 확인해 디자인 시스템에 먼저 추가한다. 금액·날짜 표기는 `format/Format.kt`("61,500원", "6.2만", "10.11 (토) 14:32").
 - Room 타입(Entity, Dao, Database)은 `core:data` 안에서 `internal`로 둔다.
 - `Contracts.kt`와 `Models.kt`를 바꾸면 모든 담당이 영향을 받는다. 다른 작업에 섞지 말고 그 변경만 담은 PR로 올려 팀 전체 확인을 받는다.
-- 담당: ① `core:notification` / ② `core:location`, `core:place` / ③ `feature:*`, `app`의 네비게이션·테마 / ④ `core:data`, `.github/`, 문서. 남의 모듈을 고쳐야 하면 PR 설명에 적는다.
+- 담당: ① `core:notification` / ② `core:location`, `core:place` / ③ `feature:*`, `app`의 네비게이션·테마 / ④ `core:data`, `core:report`, `.github/`, 문서. 남의 모듈을 고쳐야 하면 PR 설명에 적는다.
 
 ### 개인정보와 데이터
 - **알림 원문을 저장하지 않는다.** 알림의 title, text, extras는 파싱에만 쓰고 DB, 파일, 로그(`Log.*`), 원격 어디에도 남기지 않는다. 저장하는 것은 파싱 결과(`Transaction`)뿐이다. 모델과 Entity에 원문 필드를 추가하지 않는다.

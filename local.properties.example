@@ -18,6 +18,11 @@ kakao.nativeAppKey=
 # REST API 키: 카카오 로컬 API(장소 검색)
 kakao.restApiKey=
 
+# --- LLM 중계 서버 (월간 리포트 칭호·요약, server/llm-relay) ---
+# 주소는 비밀이 아니다. 토큰은 ④에게 개인톡으로 받는다. 비우면 앱은 가짜 리포트를 쓴다.
+wherepaid.relayUrl=https://wherepaid-llm-relay.skypass-hsu.workers.dev
+wherepaid.relayToken=
+
 # --- 개발 옵션 ---
 # true(기본): 메모리의 가짜 거래를 보여준다. false: 기기 DB(Room)를 쓴다.
 wherepaid.useFakeData=true
