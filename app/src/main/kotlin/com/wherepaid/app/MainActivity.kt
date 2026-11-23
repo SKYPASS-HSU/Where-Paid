@@ -59,6 +59,13 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.wherepaid.app.core.notification.NotificationAccess
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Card
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -273,11 +280,15 @@ private fun DebugNotificationPanel(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    var expanded by rememberSaveable {
+        mutableStateOf(false)
+    }
 
     var lastResult by remember {
         mutableStateOf("아직 수신 없음")
     }
-    val lifecycleOwner = LocalLifecycleOwner.current
 
     var hasNotificationAccess by remember {
         mutableStateOf(
@@ -285,10 +296,20 @@ private fun DebugNotificationPanel(
         )
     }
 
+    // PaymentSource 수신 결과 확인
+    LaunchedEffect(Unit) {
+        NotificationPaymentSource.payments.collectLatest { payment ->
+            lastResult =
+                "${payment.kind} / " +
+                        "${payment.amount}원 / " +
+                        (payment.merchant ?: "-")
+        }
+    }
+
+    // 알림 접근 설정 화면에서 돌아오면 권한 상태 다시 확인
     DisposableEffect(lifecycleOwner) {
         val observer =
             LifecycleEventObserver { _, event ->
-
                 if (event == Lifecycle.Event.ON_RESUME) {
                     hasNotificationAccess =
                         NotificationAccess.isGranted(context)
@@ -302,28 +323,12 @@ private fun DebugNotificationPanel(
         }
     }
 
-    /**
-     * NotificationPaymentSource로 ParsedPayment가 들어오면
-     * 마지막 결과를 화면에 표시한다.
-     */
-    LaunchedEffect(Unit) {
-        NotificationPaymentSource.payments.collectLatest { payment ->
-            lastResult =
-                "${payment.kind} / " +
-                        "${payment.amount}원 / " +
-                        (payment.merchant ?: "-")
-        }
-    }
-
-    /**
-     * Android 13 이상에서는 알림을 띄우기 위해
-     * POST_NOTIFICATIONS 런타임 권한이 필요하다.
-     */
+    // Android 13 이상 알림 권한
     val notificationPermissionLauncher =
         rememberLauncherForActivityResult(
             ActivityResultContracts.RequestPermission()
         ) {
-            // 허용 후 가짜 알림 버튼을 다시 누르면 된다.
+            // 허용 후 테스트 버튼을 다시 누르면 됨
         }
 
     fun sendNotification(
@@ -347,81 +352,118 @@ private fun DebugNotificationPanel(
 
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(6.dp),
         horizontalAlignment = Alignment.End,
     ) {
-        Text(
-            text = "DEBUG: $lastResult"
-        )
-        Text(
-            text =
-                if (hasNotificationAccess) {
-                    "알림 접근: 허용됨"
-                } else {
-                    "알림 접근: 필요"
-                }
-        )
-
-        /**
-         * 우리 앱에 NotificationListenerService 접근 권한을
-         * 허용하기 위한 Android 설정 화면.
-         */
-        Button(
+        // 평소에는 이것만 보임
+        FloatingActionButton(
             onClick = {
-                context.startActivity(
-                    Intent(
-                        Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS
+                expanded = !expanded
+            },
+        ) {
+            Text(
+                if (expanded) "닫기" else "DEV"
+            )
+        }
+
+        // DEV를 눌렀을 때만 펼쳐짐
+        AnimatedVisibility(
+            visible = expanded
+        ) {
+            Card(
+                modifier = Modifier
+                    .padding(top = 8.dp)
+                    .width(190.dp),
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement =
+                        Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = "DEBUG",
+                        style =
+                            MaterialTheme.typography.titleSmall,
                     )
-                )
-            }
-        ) {
-            Text("알림 접근 설정")
-        }
 
-        /**
-         * 정상 결제 알림 테스트.
-         */
-        Button(
-            onClick = {
-                sendNotification {
-                    DebugTestNotification.sendPayment(context)
+                    Text(
+                        text = lastResult,
+                        style =
+                            MaterialTheme.typography.bodySmall,
+                    )
+
+                    Text(
+                        text =
+                            if (hasNotificationAccess) {
+                                "알림 접근: 허용됨"
+                            } else {
+                                "알림 접근: 필요"
+                            },
+                        style =
+                            MaterialTheme.typography.bodySmall,
+                    )
+
+                    Button(
+                        onClick = {
+                            context.startActivity(
+                                Intent(
+                                    Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS
+                                )
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("알림 접근 설정")
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            sendNotification {
+                                DebugTestNotification
+                                    .sendPayment(context)
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("가짜 결제")
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            sendNotification {
+                                DebugTestNotification
+                                    .sendCancel(context)
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("가짜 취소")
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            sendNotification {
+                                DebugTestNotification
+                                    .sendFailed(context)
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("가짜 실패")
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            sendNotification {
+                                DebugTestNotification
+                                    .sendPoint(context)
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("가짜 포인트")
+                    }
                 }
             }
-        ) {
-            Text("가짜 결제")
-        }
-
-        /**
-         * 결제 취소 알림 테스트.
-         */
-        Button(
-            onClick = {
-                sendNotification {
-                    DebugTestNotification.sendCancel(context)
-                }
-            }
-        ) {
-            Text("가짜 취소")
-        }
-
-        Button(
-            onClick = {
-                sendNotification {
-                    DebugTestNotification.sendFailed(context)
-                }
-            }
-        ) {
-            Text("가짜 실패")
-        }
-
-        Button(
-            onClick = {
-                sendNotification {
-                    DebugTestNotification.sendPoint(context)
-                }
-            }
-        ) {
-            Text("가짜 포인트")
         }
     }
 }
