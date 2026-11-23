@@ -20,9 +20,9 @@ object SampleData {
     /** 성수역 근처. 가짜 위치의 기준점. */
     val SEONGSU = LatLng(37.5446, 127.0559)
 
-    private val SEOUL_SEONGDONG = Region("서울특별시", "성동구")
-    private val SEOUL_SEONGBUK = Region("서울특별시", "성북구")
-    private val SEOUL_JONGNO = Region("서울특별시", "종로구")
+    private val SEOUL_SEONGDONG = Region("서울특별시", "성동구", "성수동")
+    private val SEOUL_SEONGBUK = Region("서울특별시", "성북구", "삼선동")
+    private val SEOUL_JONGNO = Region("서울특별시", "종로구", "종로")
 
     private fun place(id: String, name: String, lat: Double, lng: Double, category: String, address: String) =
         Place("fake-$id", name, LatLng(lat, lng), category, address)

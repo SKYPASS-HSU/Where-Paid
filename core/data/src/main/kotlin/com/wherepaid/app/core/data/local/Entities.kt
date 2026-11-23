@@ -35,6 +35,7 @@ internal data class TransactionEntity(
     val locationAccuracyM: Float?,
     val province: String?,
     val district: String?,
+    val neighborhood: String?,
     /** [PlaceStatus.name] */
     val status: String,
     /** MAPPED일 때만 */
@@ -110,7 +111,7 @@ internal fun TransactionWithRelations.toModel(): Transaction {
         dedupeKey = tx.dedupeKey,
         location = location,
         locationAccuracyM = tx.locationAccuracyM,
-        region = tx.province?.let { Region(it, tx.district) },
+        region = tx.province?.let { Region(it, tx.district, tx.neighborhood) },
         status = PlaceStatus.valueOf(tx.status),
         place = place?.toModel(),
         // 후보는 결제 위치에서 가까운 순 (분석서 UC-02)
@@ -134,6 +135,7 @@ internal fun Transaction.toEntity() = TransactionEntity(
     locationAccuracyM = locationAccuracyM,
     province = region?.province,
     district = region?.district,
+    neighborhood = region?.neighborhood,
     status = status.name,
     placeId = place?.id,
     unmatchedReason = unmatchedReason?.name,
