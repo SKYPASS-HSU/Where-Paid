@@ -46,7 +46,7 @@ Android SDK 위치는 `ANDROID_HOME` 또는 `local.properties`의 `sdk.dir`로 �
 토스 알림 → 필터(진행 중·묶음 제외) → 파싱 → 결제면 GPS 1회 측정 후 Room에 저장 / 취소면 원래 결제에 취소 줄 추가 → 판정 순서표(분석서 FR-02: 사용자 지정 → PG사 리스트 → 위치 신뢰 → 학습기록 → 별칭사전 + 반경 300 m 검색)로 장소 상태 결정 → 화면
 
 - 모듈 사이의 약속은 `core/model`의 `Contracts.kt`(인터페이스)와 `Models.kt`(모델)가 전부다. 화면은 이 인터페이스만 받고, 어떤 구현을 넣을지는 `app`의 `AppContainer` 한 곳에서 정한다. 구현이 없는 인터페이스에는 `core/model`의 `fake/` 구현이 들어가 있다.
-- 결제는 `PlaceStatus` 다섯 가지 중 하나다: `MAPPED`(지도 핀) / `AMBIGUOUS`(느낌표 핀, 후보 2곳+) / `UNMATCHED`(매칭실패함) / `PENDING_SEARCH`(매칭 대기) / `ONLINE`(온라인 목록). 사용자 동작에 따른 이동은 `PlaceTransitions`와 저장소의 `choosePlace`·`markNotHere`·`markOnline`·`markOffline`·`delete`가 분석서 2-3 표대로 처리한다. 학습기록·사용자 지정은 가맹점명(`merchantRaw`) 단위다.
+- 결제는 `PlaceStatus` 다섯 가지 중 하나다: `MAPPED`(지도 핀) / `AMBIGUOUS`(느낌표 핀, 후보 2곳+) / `UNMATCHED`(매칭실패함) / `PENDING_SEARCH`(매칭 대기) / `ONLINE`(온라인 목록). 사용자 동작에 따른 이동은 `PlaceTransitions`와 저장소의 `choosePlace`·`markNotHere`·`markOnline`·`markOffline`·`delete`가 분석서 2-3 표대로 처리한다. 분석서 밖에서 추가한 동작은 `markForgotten`([기억 안 나요]: 매칭실패함 + 이유 `FORGOTTEN`, 장소 확인 목록에서 빠지고 총액에는 남음)과 `clearAll`(데이터 초기화) 두 가지다. 학습기록·사용자 지정은 가맹점명(`merchantRaw`) 단위다.
 - 취소는 별도 거래가 아니라 원래 결제의 `cancellations`에 붙고, 금액은 항상 `netAmount`(취소 반영)를 쓴다. 대상 결제 고르는 규칙은 `CancellationRules`.
 - 저장소 구현(가짜, Room)과 화면이 같이 쓰는 규칙은 `core/model/Rules.kt`의 순수 함수에 둔다 (월 범위는 한국 시간, 월 합계 `MonthSummary`). 규칙을 한쪽 구현에만 쓰지 않는다.
 - `local.properties`의 `wherepaid.useFakeData`(기본 `true`)가 `FakeTransactionRepository`(메모리 샘플)와 Room 구현을 고른다. CI 빌드는 `false`다.

@@ -48,6 +48,10 @@ object PlaceTransitions {
     fun markOnline(tx: Transaction): Transaction =
         tx.copy(status = PlaceStatus.ONLINE, place = null, candidates = emptyList(), unmatchedReason = null)
 
+    /** [기억 안 나요]. 매칭실패함으로 두되 장소 확인 목록에서 뺀다 ([Transaction.needsPlace]). */
+    fun markForgotten(tx: Transaction): Transaction =
+        tx.copy(status = PlaceStatus.UNMATCHED, place = null, candidates = emptyList(), unmatchedReason = UnmatchedReason.FORGOTTEN)
+
     fun markOffline(tx: Transaction): Transaction =
         tx.copy(status = PlaceStatus.UNMATCHED, place = null, candidates = emptyList(), unmatchedReason = UnmatchedReason.MARKED_OFFLINE)
 }

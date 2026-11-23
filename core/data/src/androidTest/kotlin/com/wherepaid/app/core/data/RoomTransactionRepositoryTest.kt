@@ -54,6 +54,34 @@ class RoomTransactionRepositoryTest {
     }
 
     @Test
+    fun forgottenLeavesPlaceCheckButStaysInTotal() = runTest {
+        val id = idOf("GS25")
+        val before = MonthSummary.of(repository.observeMonth(month).first())
+
+        repository.markForgotten(id)
+
+        assertEquals(UnmatchedReason.FORGOTTEN, repository.get(id)!!.unmatchedReason)
+        assertEquals(5, repository.observeNeedsPlace().first().size)
+        assertEquals(before.offlineTotal, MonthSummary.of(repository.observeMonth(month).first()).offlineTotal)
+        assertNull(repository.learnedPlace("GS25"))
+    }
+
+    @Test
+    fun clearAllRemovesEverything() = runTest {
+        repository.choosePlace(idOf("GS25"), SampleData.gs25Candidates[0])
+        repository.markOnline(idOf("쿠팡"))
+
+        repository.clearAll()
+
+        assertTrue(repository.observeMonth(month).first().isEmpty())
+        assertTrue(repository.observeNeedsPlace().first().isEmpty())
+        assertNull(repository.learnedPlace("GS25"))
+        assertNull(repository.designation("쿠팡"))
+        // 초기화 뒤에도 같은 알림을 다시 저장할 수 있다
+        assertTrue(repository.add(sample.first()))
+    }
+
+    @Test
     fun duplicateNotificationIsIgnored() = runTest {
         assertFalse(repository.add(sample.first().copy(id = "other")))
     }

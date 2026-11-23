@@ -93,6 +93,12 @@ enum class UnmatchedReason {
 
     /** 온라인 목록에서 [오프라인이에요]. "오프라인 결제로 옮김" */
     MARKED_OFFLINE,
+
+    /**
+     * 후보 고르기·매장 찾기에서 [기억 안 나요]. 장소 확인 목록과 지도에서 빠지고 총액에는 남는다.
+     * 다시 장소를 정하려면 [TransactionRepository.choosePlace]를 그대로 쓴다.
+     */
+    FORGOTTEN,
 }
 
 /** 사용자가 가맹점명 단위로 정한 온라인/오프라인 (분석서 1-6 사용자 지정). */
@@ -134,7 +140,11 @@ data class Transaction(
     /** 취소를 뺀 금액. 합계·핀 크기·리포트는 모두 이 값을 쓴다. */
     val netAmount: Long get() = amount - cancellations.sumOf { it.amount }
 
-    /** 장소 확인 화면에 나오는 결제인지 (느낌표 핀, 매칭실패함, 매칭 대기). */
+    /** 장소 확인 화면에 나오는 결제인지 (느낌표 핀, 매칭실패함, 매칭 대기). [기억 안 나요]로 넘긴 결제는 빠진다. */
     val needsPlace: Boolean
-        get() = status == PlaceStatus.AMBIGUOUS || status == PlaceStatus.UNMATCHED || status == PlaceStatus.PENDING_SEARCH
+        get() = when (status) {
+            PlaceStatus.AMBIGUOUS, PlaceStatus.PENDING_SEARCH -> true
+            PlaceStatus.UNMATCHED -> unmatchedReason != UnmatchedReason.FORGOTTEN
+            PlaceStatus.MAPPED, PlaceStatus.ONLINE -> false
+        }
 }
