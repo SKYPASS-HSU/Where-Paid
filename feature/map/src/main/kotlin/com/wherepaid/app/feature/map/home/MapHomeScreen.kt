@@ -23,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,6 +47,7 @@ import com.wherepaid.app.core.designsystem.component.floatingShadow
 import com.wherepaid.app.core.designsystem.theme.WherePaidShapes
 import com.wherepaid.app.core.designsystem.theme.WherePaidTheme
 import com.wherepaid.app.core.model.TransactionRepository
+import com.wherepaid.app.feature.map.detail.PinDetailRoute
 import com.wherepaid.app.core.model.fake.SampleData
 import kotlinx.coroutines.flow.Flow
 import java.time.YearMonth
@@ -53,7 +55,8 @@ import java.time.YearMonth
 /**
  * S-02 지도 홈 (탭 1). 저장소·신호와 연결된 진입점.
  *
- * @param onOpenPin 핀을 눌렀을 때. 느낌표 핀은 S-04 시트, 매장 핀은 S-03 핀 상세.
+ * @param onOpenCandidates 느낌표 핀 → S-04 후보 고르기 (결제 id). 매장 핀의 S-03 핀 상세는 이 화면이 직접 띄운다.
+ * @param onChangePlace 핀 상세의 [장소 변경] → S-06 매장 찾기 (결제 id)
  * @param onOpenOnline 카드의 "지도에 없어요 ›" → S-07 온라인 결제
  * @param onOpenPlaceCheck "장소 확인이 필요한 결제" 칩 → 탭 2
  * @param onBannerAction 배너 오른쪽 버튼 (켜기 / 설정 / 보기)
@@ -62,7 +65,8 @@ import java.time.YearMonth
 fun MapHomeRoute(
     repository: TransactionRepository,
     signals: Flow<MapSignals>,
-    onOpenPin: (MapPin) -> Unit,
+    onOpenCandidates: (String) -> Unit,
+    onChangePlace: (String) -> Unit,
     onOpenOnline: (YearMonth) -> Unit,
     onOpenPlaceCheck: () -> Unit,
     onBannerAction: (MapBannerKind) -> Unit,
@@ -71,6 +75,7 @@ fun MapHomeRoute(
     val viewModel: MapHomeViewModel = viewModel { MapHomeViewModel(repository, signals) }
     val state by viewModel.state.collectAsStateWithLifecycle()
     val controller = rememberMapController()
+    var selectedPlaceId by rememberSaveable { mutableStateOf<String?>(null) }
     MapHomeScreen(
         state = state,
         selectableMonths = viewModel.selectableMonths,
@@ -85,13 +90,32 @@ fun MapHomeRoute(
             KakaoMapLayer(
                 pins = state.pins,
                 cameraKey = state.month,
+                selectedPlaceId = selectedPlaceId,
                 controller = controller,
-                onPinClick = onOpenPin,
+                onPinClick = { pin ->
+                    when (pin) {
+                        is MapPin.Store -> selectedPlaceId = pin.placeId
+                        is MapPin.Ambiguous -> onOpenCandidates(pin.transactionId)
+                    }
+                },
                 modifier = mapModifier,
                 contentPaddingTopDp = SUMMARY_CARD_SPACE_DP,
             )
         },
     )
+
+    selectedPlaceId?.let { placeId ->
+        PinDetailRoute(
+            placeId = placeId,
+            month = state.month,
+            repository = repository,
+            onChangePlace = { transactionId ->
+                selectedPlaceId = null
+                onChangePlace(transactionId)
+            },
+            onDismiss = { selectedPlaceId = null },
+        )
+    }
 }
 
 /**
