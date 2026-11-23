@@ -73,6 +73,14 @@ class FindPlaceViewModel(
         }
     }
 
+    /** [기억 안 나요] → 장소 확인 목록에서 빼고 닫는다 (총액에는 남음). */
+    fun markForgotten() {
+        viewModelScope.launch {
+            repository.markForgotten(transactionId)
+            _state.update { it.copy(finished = true) }
+        }
+    }
+
     /** 뒤로 가기. 고른 매장이 있으면 D-02로 한 번 묻는다. */
     fun onBack() = _state.update {
         if (it.selected != null) it.copy(showLeaveDialog = true) else it.copy(finished = true)

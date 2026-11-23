@@ -77,6 +77,7 @@ fun FindPlaceRoute(
         onSelect = viewModel::select,
         onRegister = viewModel::register,
         onOnline = viewModel::markOnline,
+        onForgot = viewModel::markForgotten,
         modifier = modifier,
     )
     if (state.showLeaveDialog) {
@@ -104,6 +105,7 @@ fun FindPlaceScreen(
     onSelect: (String) -> Unit,
     onRegister: () -> Unit,
     onOnline: () -> Unit,
+    onForgot: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = WherePaidTheme.colors
@@ -168,7 +170,11 @@ fun FindPlaceScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text("찾는 매장이 없나요?", style = type.caption13, color = colors.textSecondary)
-                WherePaidButton("온라인 결제예요", onOnline, style = ButtonStyle.Secondary, size = ButtonSize.Small)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    WherePaidButton("온라인 결제예요", onOnline, style = ButtonStyle.Secondary, size = ButtonSize.Small)
+                    // 시안 밖 추가 (보충 B): 장소 확인 목록에서 뺀다. 총액에는 남는다.
+                    WherePaidButton("기억 안 나요", onForgot, style = ButtonStyle.Secondary, size = ButtonSize.Small)
+                }
             }
         }
         Spacer(Modifier.height(20.dp))
@@ -280,7 +286,7 @@ private val previewFound = SearchResults.Found(
 
 @Composable
 private fun Preview(state: FindPlaceUiState) {
-    WherePaidTheme { FindPlaceScreen(state, {}, {}, {}, {}, {}, {}) }
+    WherePaidTheme { FindPlaceScreen(state, {}, {}, {}, {}, {}, {}, {}) }
 }
 
 @Preview(name = "기본 (5:71)", showBackground = true, widthDp = 360, heightDp = 800)
