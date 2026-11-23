@@ -1,9 +1,11 @@
 package com.wherepaid.app.core.model.fake
 
 import com.wherepaid.app.core.model.KOREA_ZONE
+import com.wherepaid.app.core.model.LatLng
 import com.wherepaid.app.core.model.LocationFailure
 import com.wherepaid.app.core.model.LocationResult
 import com.wherepaid.app.core.model.MonthSummary
+import com.wherepaid.app.core.model.Place
 import com.wherepaid.app.core.model.PlaceStatus
 import com.wherepaid.app.core.model.UnmatchedReason
 import com.wherepaid.app.core.model.UserDesignation
@@ -182,5 +184,19 @@ class FakesTest {
     @Test
     fun `학습기록이 없으면 null`() = runTest {
         assertNull(repository().learnedPlace("GS25"))
+    }
+
+    @Test
+    fun `자동 매칭은 매칭 대기에서 빼고 학습기록은 남기지 않는다`() = runTest {
+        val repository = repository()
+        val id = idOf("씨유 영등포아크로타")
+        val store = Place("kakao-test-1", "CU 영등포아크로타점", LatLng(37.52, 126.90), "편의점", null)
+        assertEquals(listOf(id), repository.pendingSearch().map { it.id })
+
+        repository.updateMatch(id, PlaceStatus.MAPPED, store, emptyList(), null)
+
+        assertTrue(repository.pendingSearch().isEmpty())
+        assertEquals(store, repository.get(id)!!.place)
+        assertNull(repository.learnedPlace("씨유 영등포아크로타"))
     }
 }

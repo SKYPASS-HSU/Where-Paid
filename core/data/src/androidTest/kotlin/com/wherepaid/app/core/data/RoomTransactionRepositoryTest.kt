@@ -4,7 +4,9 @@ import androidx.room.Room
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.wherepaid.app.core.data.local.WherePaidDatabase
+import com.wherepaid.app.core.model.LatLng
 import com.wherepaid.app.core.model.MonthSummary
+import com.wherepaid.app.core.model.Place
 import com.wherepaid.app.core.model.PlaceStatus
 import com.wherepaid.app.core.model.UnmatchedReason
 import com.wherepaid.app.core.model.UserDesignation
@@ -130,4 +132,61 @@ class RoomTransactionRepositoryTest {
         assertNull(repository.get(id))
         assertEquals(SampleData.gs25Candidates[0], repository.learnedPlace("GS25"))
     }
+
+    @Test
+    fun monthQueryReturnsOnlyThatMonthNewestFirst() = runTest {
+        val october = repository.observeMonth(month).first()
+
+        assertEquals(sample.size, october.size)
+        assertEquals(october.sortedByDescending { it.paidAt }, october)
+        assertTrue(repository.observeMonth(month.plusMonths(1)).first().isEmpty())
+    }
+
+    @Test
+    fun notHereMovesToUnmatched() = runTest {
+        val id = idOf("이디야커피")
+
+        repository.markNotHere(id)
+
+        val tx = repository.get(id)!!
+        assertEquals(PlaceStatus.UNMATCHED, tx.status)
+        assertEquals(UnmatchedReason.NOT_HERE, tx.unmatchedReason)
+    }
+
+    @Test
+    fun forgottenPaymentCanStillChoosePlaceLater() = runTest {
+        val id = idOf("GS25")
+        repository.markForgotten(id)
+
+        repository.choosePlace(id, SampleData.gs25Candidates[0])
+
+        assertEquals(PlaceStatus.MAPPED, repository.get(id)!!.status)
+        assertNull(repository.get(id)!!.unmatchedReason)
+    }
+
+    @Test
+    fun automaticMatchLeavesPendingWithoutLearning() = runTest {
+        val id = idOf("씨유 영등포아크로타")
+        assertEquals(listOf(id), repository.pendingSearch().map { it.id })
+
+        repository.updateMatch(id, PlaceStatus.MAPPED, cuStore, emptyList(), null)
+
+        assertTrue(repository.pendingSearch().isEmpty())
+        assertEquals(cuStore, repository.get(id)!!.place)
+        assertNull(repository.learnedPlace("씨유 영등포아크로타"))
+    }
+
+    @Test
+    fun deleteRemovesFromMonthTotal() = runTest {
+        val id = idOf("GS25")
+        val before = MonthSummary.of(repository.observeMonth(month).first())
+        val amount = repository.get(id)!!.netAmount
+
+        repository.delete(id)
+
+        val after = MonthSummary.of(repository.observeMonth(month).first())
+        assertEquals(before.offlineTotal - amount, after.offlineTotal)
+    }
+
+    private val cuStore = Place("kakao-test-1", "CU 영등포아크로타점", LatLng(37.52, 126.90), "편의점", null)
 }
