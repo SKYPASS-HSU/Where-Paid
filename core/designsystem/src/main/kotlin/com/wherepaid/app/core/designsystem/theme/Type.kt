@@ -65,6 +65,8 @@ data class WherePaidTypography(
     val zoom20: TextStyle = style(20.sp, FontWeight.Medium, lineHeight = 1.3f),
     /** 링크·칩 끝의 › */
     val chevron16: TextStyle = style(16.sp, FontWeight.Medium, lineHeight = 1.3f),
+    /** 줄 끝 더보기 ⋯ (S-03 핀 상세) */
+    val more16: TextStyle = style(16.sp, FontWeight.Bold),
     /** 큰 매장 핀 안 금액 (지름 56 이상, "6.2만") */
     val pinAmountLarge: TextStyle = style(15.sp, FontWeight.Bold, lineHeight = 1.3f),
     /** 작은 매장 핀 안 금액 ("1만") */

@@ -31,7 +31,6 @@ import com.wherepaid.app.core.designsystem.component.WherePaidIcons
 import com.wherepaid.app.core.designsystem.theme.WherePaidTheme
 import com.wherepaid.app.feature.map.home.MapBannerKind
 import com.wherepaid.app.feature.map.home.MapHomeRoute
-import com.wherepaid.app.feature.map.home.MapPin
 import com.wherepaid.app.feature.map.home.MapSignals
 import com.wherepaid.app.feature.map.candidate.CandidatePickerRoute
 import com.wherepaid.app.feature.onboarding.OnboardingScreen
@@ -125,13 +124,8 @@ private fun WherePaidNav(container: AppContainer) {
                 MapHomeRoute(
                     repository = container.transactionRepository,
                     signals = signals,
-                    onOpenPin = { pin ->
-                        when (pin) {
-                            is MapPin.Ambiguous -> candidateSheetFor = pin.transactionId
-                            // TODO(③): S-03 핀 상세
-                            is MapPin.Store -> soon("핀 상세")
-                        }
-                    },
+                    onOpenCandidates = { candidateSheetFor = it },
+                    onChangePlace = { navController.navigate(Routes.findPlace(it)) },
                     // TODO(③): S-07 온라인 결제
                     onOpenOnline = { soon("온라인 결제") },
                     onOpenPlaceCheck = { navController.navigateToTab(Routes.PLACE_CHECK) },

@@ -86,6 +86,8 @@ private sealed interface MapProblem {
 fun KakaoMapLayer(
     pins: List<MapPin>,
     cameraKey: Any,
+    /** 핀 상세(S-03)가 열린 매장. 이 핀은 테두리가 진해진다. */
+    selectedPlaceId: String? = null,
     controller: MapController,
     onPinClick: (MapPin) -> Unit,
     modifier: Modifier = Modifier,
@@ -152,13 +154,14 @@ fun KakaoMapLayer(
     }
 
     val map = controller.map
-    LaunchedEffect(map, pins) {
+    LaunchedEffect(map, pins, selectedPlaceId) {
         val layer = map?.pinLayer() ?: return@LaunchedEffect
         layer.removeAll()
         pins.forEach { pin ->
-            val bitmap = pinCache.getOrPut(pin.cacheKey()) {
+            val selected = pin is MapPin.Store && pin.placeId == selectedPlaceId
+            val bitmap = pinCache.getOrPut(pin.cacheKey(selected)) {
                 when (pin) {
-                    is MapPin.Store -> bitmaps.storePin(pin.amount, pin.name, pin.diameterDp)
+                    is MapPin.Store -> bitmaps.storePin(pin.amount, pin.name, pin.diameterDp, selected)
                     is MapPin.Ambiguous -> bitmaps.ambiguousPin()
                 }
             }
@@ -223,8 +226,8 @@ private fun KakaoMap.pinLayer(): LabelLayer? {
     )
 }
 
-private fun MapPin.cacheKey(): String = when (this) {
-    is MapPin.Store -> "store|$amount|$name|$diameterDp"
+private fun MapPin.cacheKey(selected: Boolean): String = when (this) {
+    is MapPin.Store -> "store|$amount|$name|$diameterDp|$selected"
     is MapPin.Ambiguous -> "ambiguous"
 }
 
