@@ -145,7 +145,7 @@ interface TransactionRepository { /* 월별·장소 확인 조회, 기록, 취�
 - 모델과 인터페이스를 바꿀 때는 그 변경만 담은 PR로 올려 팀 전체 확인을 받습니다.
 
 ### 저장 방식
-로그인과 앱 서버 없이 **기기 DB(Room)에만 저장**하고, Android 자동 백업으로 본인 Google 계정에 보존합니다 (요구사항 분석서 1-4, NFR-02). 서버는 월간 리포트의 LLM 호출을 중계하는 것 하나뿐입니다.
+로그인과 앱 서버 없이 **기기 DB(Room)에만 저장**하고, Android 자동 백업으로 본인 Google 계정에 보존합니다 (요구사항 분석서 1-4, NFR-02). 서버는 월간 리포트의 LLM 호출을 중계하는 것 하나뿐입니다 ([`server/llm-relay`](server/llm-relay/README.md)).
 
 가짜 데이터 대신 Room으로 실행해 보려면 `local.properties`에 아래 줄을 넣고 다시 빌드합니다. (아직 결제를 저장하는 기능이 없어서 0건으로 나옵니다)
 ```properties
