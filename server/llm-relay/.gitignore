@@ -1,0 +1,4 @@
+node_modules/
+.wrangler/
+# 로컬 비밀 값 (GEMINI_API_KEY, APP_TOKEN)
+.dev.vars

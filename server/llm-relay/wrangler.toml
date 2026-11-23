@@ -1,0 +1,11 @@
+# Cloudflare Workers 설정. 비밀 값(GEMINI_API_KEY, APP_TOKEN)은 여기에 쓰지 않는다.
+# 배포용: npx wrangler secret put GEMINI_API_KEY
+# 로컬용: .dev.vars 파일 (커밋 금지)
+name = "wherepaid-llm-relay"
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+workers_dev = true
+
+[vars]
+# Google AI Studio에서 무료 등급으로 쓸 수 있는 모델 ID를 복사해 넣는다. 비우면 gemini-flash-lite-latest.
+GEMINI_MODEL = "gemini-flash-lite-latest"
