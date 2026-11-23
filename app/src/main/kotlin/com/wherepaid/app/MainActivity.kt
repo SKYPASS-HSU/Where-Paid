@@ -54,6 +54,11 @@ import com.wherepaid.app.feature.placecheck.PlaceCheckRoute
 import com.wherepaid.app.feature.placecheck.find.FindPlaceRoute
 import com.wherepaid.app.feature.report.ReportScreen
 import kotlinx.coroutines.flow.collectLatest
+import androidx.compose.runtime.DisposableEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.wherepaid.app.core.notification.NotificationAccess
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -272,6 +277,30 @@ private fun DebugNotificationPanel(
     var lastResult by remember {
         mutableStateOf("아직 수신 없음")
     }
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    var hasNotificationAccess by remember {
+        mutableStateOf(
+            NotificationAccess.isGranted(context)
+        )
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer =
+            LifecycleEventObserver { _, event ->
+
+                if (event == Lifecycle.Event.ON_RESUME) {
+                    hasNotificationAccess =
+                        NotificationAccess.isGranted(context)
+                }
+            }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     /**
      * NotificationPaymentSource로 ParsedPayment가 들어오면
@@ -323,6 +352,14 @@ private fun DebugNotificationPanel(
     ) {
         Text(
             text = "DEBUG: $lastResult"
+        )
+        Text(
+            text =
+                if (hasNotificationAccess) {
+                    "알림 접근: 허용됨"
+                } else {
+                    "알림 접근: 필요"
+                }
         )
 
         /**
