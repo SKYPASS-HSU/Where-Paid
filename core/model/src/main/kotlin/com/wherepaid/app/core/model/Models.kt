@@ -54,6 +54,12 @@ data class Region(
     val province: String,
     /** 시·군·구. 예: "성동구" */
     val district: String?,
+    /**
+     * 읍·면·동. 예: "성수동". 리포트 칭호 앞에 붙인다 ("성수동 카페 순례자", [Neighborhoods.top]).
+     * 지도 핀 결제의 카카오 주소에서 뽑는다 ([Neighborhoods.fromAddress]). 모르면 null.
+     * LLM 중계 서버에는 보내지 않는다 (NFR-03).
+     */
+    val neighborhood: String? = null,
 )
 
 /**

@@ -65,4 +65,34 @@ class RulesTest {
         val d = distanceMeters(LatLng(37.5665, 126.9780), LatLng(37.5665, 126.9790))
         assertTrue(d in 85.0..95.0)
     }
+
+    @Test
+    fun `카카오 지번 주소에서 동을 뽑는다`() {
+        assertEquals("성수동", Neighborhoods.fromAddress("서울 성동구 성수동2가 280"))
+        assertEquals("역삼동", Neighborhoods.fromAddress("서울 강남구 역삼1동 10-3"))
+        assertEquals("정자동", Neighborhoods.fromAddress("경기 성남시 분당구 정자동 1"))
+        assertEquals("종로", Neighborhoods.fromAddress("서울 종로구 종로1가 1"))
+        assertNull(Neighborhoods.fromAddress("서울 성동구 아차산로 100"))
+        assertNull(Neighborhoods.fromAddress("서울 강남구 테헤란로4길 6"))
+        assertNull(Neighborhoods.fromAddress(""))
+        assertNull(Neighborhoods.fromAddress(null))
+    }
+
+    @Test
+    fun `가장 많이 쓴 동은 지도 핀 결제의 취소 반영 합계로 고른다`() {
+        val seongsu = Region("서울특별시", "성동구", "성수동")
+        val samseon = Region("서울특별시", "성북구", "삼선동")
+        fun mapped(id: String, amount: Long, region: Region?, canceled: Long = 0) =
+            payment(id, amount, 1, canceled).copy(status = PlaceStatus.MAPPED, region = region)
+
+        val txs = listOf(
+            mapped("a", 10_000, seongsu, canceled = 6_000), // 성수동 4,000
+            mapped("b", 5_000, samseon), // 삼선동 5,000
+            mapped("c", 9_000, null), // 동 모름
+            payment("d", 50_000, 1).copy(status = PlaceStatus.ONLINE, region = seongsu), // 지도 핀 아님
+        )
+
+        assertEquals("삼선동", Neighborhoods.top(txs))
+        assertNull(Neighborhoods.top(txs.filter { it.region == null }))
+    }
 }
