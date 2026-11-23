@@ -19,8 +19,10 @@ import com.wherepaid.app.core.model.UnmatchedReason
 import com.wherepaid.app.core.model.UserDesignation
 import com.wherepaid.app.core.model.endMillisExclusive
 import com.wherepaid.app.core.model.startMillis
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import java.time.YearMonth
 
 /**
@@ -31,6 +33,7 @@ import java.time.YearMonth
 fun createTransactionRepository(context: Context): TransactionRepository =
     RoomTransactionRepository(WherePaidDatabase.create(context))
 
+/** 장소 확인 후보 상태. [기억 안 나요]로 넘긴 매칭실패함은 읽은 뒤 [Transaction.needsPlace]로 거른다. */
 private val NEEDS_PLACE = listOf(PlaceStatus.AMBIGUOUS, PlaceStatus.UNMATCHED, PlaceStatus.PENDING_SEARCH).map { it.name }
 
 internal class RoomTransactionRepository(private val db: WherePaidDatabase) : TransactionRepository {
@@ -41,7 +44,7 @@ internal class RoomTransactionRepository(private val db: WherePaidDatabase) : Tr
         transactions.observeBetween(month.startMillis(), month.endMillisExclusive()).map { list -> list.map { it.toModel() } }
 
     override fun observeNeedsPlace(): Flow<List<Transaction>> =
-        transactions.observeByStatus(NEEDS_PLACE).map { list -> list.map { it.toModel() } }
+        transactions.observeByStatus(NEEDS_PLACE).map { list -> list.map { it.toModel() }.filter { it.needsPlace } }
 
     override fun observe(id: String): Flow<Transaction?> = transactions.observe(id).map { it?.toModel() }
 
@@ -101,6 +104,11 @@ internal class RoomTransactionRepository(private val db: WherePaidDatabase) : Tr
     }
 
     override suspend fun delete(id: String) = transactions.delete(id)
+
+    override suspend fun markForgotten(id: String) = modify(id, PlaceTransitions::markForgotten)
+
+    /** clearAllTables는 블로킹 호출이고 트랜잭션 안에서 부를 수 없어 IO 스레드에서 따로 부른다. */
+    override suspend fun clearAll() = withContext(Dispatchers.IO) { db.clearAllTables() }
 
     private suspend fun modify(id: String, change: (Transaction) -> Transaction) = db.withTransaction {
         val tx = get(id) ?: return@withTransaction

@@ -73,5 +73,6 @@ private fun UnmatchedReason?.label(): String = when (this) {
     UnmatchedReason.NO_RESULT -> "근처에서 못 찾았어요"
     UnmatchedReason.NOT_HERE -> "후보 중에 없었어요"
     UnmatchedReason.MARKED_OFFLINE -> "오프라인 결제로 옮김"
+    UnmatchedReason.FORGOTTEN -> "기억 안 나요" // needsPlace에서 빠져 목록에는 나오지 않는다
     null -> "장소를 못 찾았어요"
 }

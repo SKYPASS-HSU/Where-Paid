@@ -138,6 +138,14 @@ class FakeTransactionRepository(
         transactions.update { it - id }
     }
 
+    override suspend fun markForgotten(id: String) = modify(id, PlaceTransitions::markForgotten)
+
+    override suspend fun clearAll() {
+        transactions.value = emptyMap()
+        learned.value = emptyMap()
+        designations.value = emptyMap()
+    }
+
     private fun put(tx: Transaction) = transactions.update { it + (tx.id to tx) }
 
     private fun modify(id: String, change: (Transaction) -> Transaction) =
