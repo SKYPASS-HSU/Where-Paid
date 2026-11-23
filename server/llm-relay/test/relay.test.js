@@ -58,8 +58,10 @@ test('형식이 틀린 집계는 BadRequest', () => {
 
 test('프롬프트에는 집계 숫자만 들어간다', () => {
   const prompt = buildUserPrompt(parseReportRequest(valid()));
-  assert.match(prompt, /129,800원/);
-  assert.match(prompt, /"카페": 21,000원, 5건/);
+  assert.match(prompt, /전체 합계: 218,700원 \(지난달보다 123% 많음\)/);
+  assert.match(prompt, /온라인 결제: 88,900원 \(전체의 41%\)/);
+  assert.match(prompt, /"카페": 21,000원, 16%, 5건/);
+  assert.ok(prompt.indexOf('카페') < prompt.indexOf('편의점')); // 큰 카테고리부터
   assert.match(buildUserPrompt(parseReportRequest({ ...valid(), categories: [], previousMonthTotal: null })), /기록 없음/);
 });
 

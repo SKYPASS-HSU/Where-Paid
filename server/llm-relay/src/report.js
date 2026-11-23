@@ -10,7 +10,7 @@ export const LIMITS = {
   maxAmount: 100_000_000,
   maxCount: 10_000,
   titleMax: 12,
-  summaryMax: 200,
+  summaryMax: 150,
 };
 
 export class BadRequest extends Error {}
@@ -65,24 +65,37 @@ export function parseReportRequest(body) {
 export const SYSTEM_PROMPT = [
   '너는 소비 기록 앱 "어디서돈썼지도"의 월간 리포트 작가다.',
   '사용자의 한 달 소비 집계를 받아 한국어로 소비 칭호와 짧은 요약을 쓴다.',
-  `칭호: ${LIMITS.titleMax}자 이내, 재치 있고 다정하게, 소비 패턴이 드러나게 (예: "카페 단골 탐험가").`,
-  `요약: 2~3문장, ${LIMITS.summaryMax}자 이내, 해요체. 숫자는 주어진 값만 쓰고 계산해서 새 숫자를 만들지 않는다.`,
+  `칭호: ${LIMITS.titleMax}자 이내, 재치 있고 다정하게, 소비 패턴이 드러나게 .`,
+  `요약: 2~3문장, ${LIMITS.summaryMax}자 이내, 해요체. 숫자는 주어진 값(금액, 비율, 건수)만 그대로 쓰고 새로 계산하지 않는다.`,
+  '지역·동네·매장 이름은 받지 않으므로 칭호와 요약에 쓰지 않는다. 칭호는 소비 성향만 담는다 (예: "카페 순례자", "편의점 야행자").',
   '비난하거나 훈계하지 않는다. 투자·대출·금융 상품을 권하지 않는다.',
   '집계에 없는 사실(장소, 사람, 이유)을 지어내지 않는다.',
 ].join('\n');
 
-/** 검증된 집계를 모델에 넘길 문장으로 만든다. 사용자 입력은 카테고리 이름뿐이라 따옴표로 감싼다. */
+/**
+ * 검증된 집계를 모델에 넘길 문장으로 만든다. 비율·증감은 여기서 계산해 넘긴다 (모델이 숫자를 지어내지 않게).
+ * 사용자 입력은 카테고리 이름뿐이라 따옴표로 감싼다.
+ */
 export function buildUserPrompt(req) {
   const won = (n) => `${n.toLocaleString('ko-KR')}원`;
+  const pct = (part, whole) => (whole > 0 ? `${Math.round((part / whole) * 100)}%` : '0%');
+  const total = req.offlineTotal + req.onlineTotal;
+  let change = '지난달 기록 없음';
+  if (req.previousMonthTotal !== null && req.previousMonthTotal > 0) {
+    const diff = Math.round(((total - req.previousMonthTotal) / req.previousMonthTotal) * 100);
+    change = diff === 0 ? '지난달과 같음' : `지난달보다 ${Math.abs(diff)}% ${diff > 0 ? '많음' : '적음'}`;
+  }
   const lines = [
     `대상 달: ${req.month}`,
-    `오프라인 결제 합계: ${won(req.offlineTotal)}`,
-    `온라인 결제 합계: ${won(req.onlineTotal)}`,
+    `전체 합계: ${won(total)} (${change})`,
+    `오프라인 결제: ${won(req.offlineTotal)} (전체의 ${pct(req.offlineTotal, total)})`,
+    `온라인 결제: ${won(req.onlineTotal)} (전체의 ${pct(req.onlineTotal, total)})`,
     `결제 건수: ${req.paymentCount}건`,
-    req.previousMonthTotal === null ? '지난달 합계: 기록 없음' : `지난달 합계: ${won(req.previousMonthTotal)}`,
-    '카테고리별 (합계, 건수):',
+    '카테고리별 (합계, 오프라인 결제 중 비율, 건수):',
     ...(req.categories.length
-      ? req.categories.map((c) => `- "${c.name}": ${won(c.total)}, ${c.count}건`)
+      ? [...req.categories]
+          .sort((a, b) => b.total - a.total)
+          .map((c) => `- "${c.name}": ${won(c.total)}, ${pct(c.total, req.offlineTotal)}, ${c.count}건`)
       : ['- (지도에 표시된 결제 없음)']),
   ];
   return lines.join('\n');
