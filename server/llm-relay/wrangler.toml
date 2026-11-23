@@ -5,6 +5,8 @@ name = "wherepaid-llm-relay"
 main = "src/index.js"
 compatibility_date = "2026-11-01"
 workers_dev = true
+# 버전별 미리보기 주소는 쓰지 않는다
+preview_urls = false
 
 [vars]
 # Google AI Studio에서 무료 등급으로 쓸 수 있는 모델 ID를 복사해 넣는다. 비우면 gemini-flash-lite-latest.
