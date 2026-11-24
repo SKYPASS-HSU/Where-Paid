@@ -29,6 +29,7 @@ import com.wherepaid.app.core.designsystem.component.BottomTab
 import com.wherepaid.app.core.designsystem.component.WherePaidBottomBar
 import com.wherepaid.app.core.designsystem.component.WherePaidIcons
 import com.wherepaid.app.core.designsystem.theme.WherePaidTheme
+import com.wherepaid.app.core.location.LocationPermissions
 import com.wherepaid.app.feature.map.home.MapBannerKind
 import com.wherepaid.app.feature.map.home.MapHomeRoute
 import com.wherepaid.app.feature.map.home.MapSignals
@@ -50,6 +51,12 @@ class MainActivity : ComponentActivity() {
                 WherePaidNav(appContainer)
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // 설정 화면에서 위치 권한을 바꾸고 돌아오면 배너를 다시 계산한다.
+        appContainer.locationAccess.refresh()
     }
 }
 
@@ -131,8 +138,11 @@ private fun WherePaidNav(container: AppContainer) {
                     onOpenPlaceCheck = { navController.navigateToTab(Routes.PLACE_CHECK) },
                     onBannerAction = { kind ->
                         when (kind) {
-                            // TODO(①②): 알림 접근·위치 설정 화면으로 이동
-                            MapBannerKind.AutoRecordOff, MapBannerKind.LocationNotAlways -> soon("권한 설정")
+                            // TODO(①): 알림 접근 설정 화면으로 이동
+                            MapBannerKind.AutoRecordOff -> soon("권한 설정")
+                            // 앱 설정 화면 → 권한 → 위치 → "항상 허용"과 "정확한 위치 사용"
+                            MapBannerKind.LocationNotAlways ->
+                                context.startActivity(LocationPermissions.appSettingsIntent(context))
                             MapBannerKind.ReportArrived -> navController.navigateToTab(Routes.REPORT)
                             MapBannerKind.Offline -> Unit
                         }

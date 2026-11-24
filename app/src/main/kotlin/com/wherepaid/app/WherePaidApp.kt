@@ -3,11 +3,12 @@ package com.wherepaid.app
 import android.app.Application
 import android.content.Context
 import com.wherepaid.app.core.data.createTransactionRepository
+import com.wherepaid.app.core.location.FusedLocationProvider
+import com.wherepaid.app.core.location.LocationAccessMonitor
 import com.wherepaid.app.core.model.LocationProvider
 import com.wherepaid.app.core.model.PaymentSource
 import com.wherepaid.app.core.model.PlaceResolver
 import com.wherepaid.app.core.model.TransactionRepository
-import com.wherepaid.app.core.model.fake.FakeLocationProvider
 import com.wherepaid.app.core.model.fake.FakePaymentSource
 import com.wherepaid.app.core.model.fake.FakePlaceResolver
 import com.wherepaid.app.core.model.fake.FakeTransactionRepository
@@ -51,8 +52,11 @@ class AppContainer(context: Context) {
     // TODO(①): 알림 접근이 켜져 있는지. false면 "자동 기록이 꺼져 있어요" 배너.
     val autoRecordEnabled: Flow<Boolean> = MutableStateFlow(true)
 
-    // TODO(②): 위치 권한이 "항상 허용"인지. false면 "위치를 항상 허용해 주세요" 배너.
-    val locationAlwaysAllowed: Flow<Boolean> = MutableStateFlow(true)
+    /** 위치 권한이 "정확한 위치 + 항상 허용"인지. MainActivity.onResume에서 다시 확인한다. */
+    val locationAccess = LocationAccessMonitor(context)
+
+    /** false면 "위치를 항상 허용해 주세요" 배너. */
+    val locationAlwaysAllowed: Flow<Boolean> = locationAccess.alwaysAllowed
 
     // TODO(④): 새로 도착한 월간 리포트의 달. 있으면 "○월 리포트가 도착했어요" 배너.
     val arrivedReport: Flow<YearMonth?> = MutableStateFlow(null)
@@ -60,8 +64,8 @@ class AppContainer(context: Context) {
     // TODO(①): :core:notification 구현으로 교체
     val paymentSource: PaymentSource by lazy { FakePaymentSource() }
 
-    // TODO(②): :core:location 구현으로 교체
-    val locationProvider: LocationProvider by lazy { FakeLocationProvider() }
+    /** 결제 알림마다 위치 1회 측정 (고정확도, 캐시 금지, 10초). 가짜 데이터 모드와 상관없이 실제 측정한다. */
+    val locationProvider: LocationProvider by lazy { FusedLocationProvider(context) }
 
     // TODO(②): :core:place 구현으로 교체
     val placeResolver: PlaceResolver by lazy { FakePlaceResolver() }
