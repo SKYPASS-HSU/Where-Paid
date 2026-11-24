@@ -31,7 +31,7 @@ Android SDK 위치는 `ANDROID_HOME` 또는 `local.properties`의 `sdk.dir`로 �
 
 ```
 :app                 Application, AppContainer(수동 DI), 하단 탭 네비게이션
-:core:model          순수 Kotlin. 모델 + 인터페이스 4개(Contracts.kt) + 가짜 구현(fake/)
+:core:model          순수 Kotlin. 모델 + 인터페이스 5개(Contracts.kt) + 가짜 구현(fake/)
 :core:designsystem   피그마 시안의 색·글꼴(Pretendard)·모양 토큰, 공통 컴포넌트, 금액·날짜 표기
 :core:notification   ① PaymentSource 구현 자리 (알림 수집·파싱)
 :core:location       ② LocationProvider 구현 자리 (GPS 1회 측정)
@@ -49,6 +49,8 @@ server/llm-relay     ④ LLM 중계 서버 (Cloudflare Workers, Gradle 밖). 월
 
 - 모듈 사이의 약속은 `core/model`의 `Contracts.kt`(인터페이스)와 `Models.kt`(모델)가 전부다. 화면은 이 인터페이스만 받고, 어떤 구현을 넣을지는 `app`의 `AppContainer` 한 곳에서 정한다. 구현이 없는 인터페이스에는 `core/model`의 `fake/` 구현이 들어가 있다.
 - 결제는 `PlaceStatus` 다섯 가지 중 하나다: `MAPPED`(지도 핀) / `AMBIGUOUS`(느낌표 핀, 후보 2곳+) / `UNMATCHED`(매칭실패함) / `PENDING_SEARCH`(매칭 대기) / `ONLINE`(온라인 목록). 사용자 동작에 따른 이동은 `PlaceTransitions`와 저장소의 `choosePlace`·`markNotHere`·`markOnline`·`markOffline`·`delete`가 분석서 2-3 표대로 처리한다. 분석서 밖에서 추가한 동작은 `markForgotten`([기억 안 나요]: 매칭실패함 + 이유 `FORGOTTEN`, 장소 확인 목록에서 빠지고 총액에는 남음)과 `clearAll`(데이터 초기화) 두 가지다. 학습기록·사용자 지정은 가맹점명(`merchantRaw`) 단위다.
+- 행정구역 `Region`은 시·도, 시·군·구, 동(`neighborhood`)이다. 동은 지도 핀 결제의 카카오 지번 주소에서 `Neighborhoods.fromAddress`로 뽑고, 리포트 칭호 앞 동네는 `Neighborhoods.top`(그 달 지도 핀 합계 1위 동)을 쓴다. 공유 카드의 동네 표시는 사용자가 켤 때만(기본 꺼짐). 동은 LLM 중계 서버로 보내지 않는다.
+- 월간 리포트 칭호·요약은 `ReportWriter`(④)가 LLM 중계 서버에서 받는다. 요청은 `MonthlyReportRules.request`로 만들고 월 집계만 담는다. 실패하면 `ReportResult.Failed`이고 화면은 집계만 보여 준다.
 - 취소는 별도 거래가 아니라 원래 결제의 `cancellations`에 붙고, 금액은 항상 `netAmount`(취소 반영)를 쓴다. 대상 결제 고르는 규칙은 `CancellationRules`.
 - 저장소 구현(가짜, Room)과 화면이 같이 쓰는 규칙은 `core/model/Rules.kt`의 순수 함수에 둔다 (월 범위는 한국 시간, 월 합계 `MonthSummary`). 규칙을 한쪽 구현에만 쓰지 않는다.
 - `local.properties`의 `wherepaid.useFakeData`(기본 `true`)가 `FakeTransactionRepository`(메모리 샘플)와 Room 구현을 고른다. CI 빌드는 `false`다.
