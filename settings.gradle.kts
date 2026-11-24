@@ -32,6 +32,7 @@ include(":core:notification")
 include(":core:location")
 include(":core:place")
 include(":core:data")
+include(":core:report")
 
 // 화면
 include(":feature:map")

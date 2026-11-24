@@ -23,6 +23,7 @@ PR 리뷰어(Claude Review 워크플로)도 이 파일을 기준으로 리뷰한
 ./gradlew :core:location:connectedDebugAndroidTest   # 실제 위치 1회 측정 (위치 서비스 켜진 에뮬레이터/기기)
 ./gradlew installDebug               # 연결된 기기/에뮬레이터에 설치
 adb shell am start -n com.wherepaid.app/.MainActivity
+cd server/llm-relay && npm install && npm test   # LLM 중계 서버 테스트 (Node.js 20+)
 ```
 
 Android SDK 위치는 `ANDROID_HOME` 또는 `local.properties`의 `sdk.dir`로 잡는다. 클라우드 세션에서는 `dl.google.com`, `maven.google.com`이 허용돼야 빌드된다.
@@ -31,16 +32,18 @@ Android SDK 위치는 `ANDROID_HOME` 또는 `local.properties`의 `sdk.dir`로 �
 
 ```
 :app                 Application, AppContainer(수동 DI), 하단 탭 네비게이션
-:core:model          순수 Kotlin. 모델 + 인터페이스 4개(Contracts.kt) + 가짜 구현(fake/)
+:core:model          순수 Kotlin. 모델 + 인터페이스 5개(Contracts.kt) + 가짜 구현(fake/)
 :core:designsystem   피그마 시안의 색·글꼴(Pretendard)·모양 토큰, 공통 컴포넌트, 금액·날짜 표기
 :core:notification   ① PaymentSource 구현 자리 (알림 수집·파싱)
 :core:location       ② FusedLocationProvider(GPS 1회 측정), LocationPermissions(권한 확인·설정 이동), LocationAccessMonitor("항상 허용" 배너)
 :core:place          ② PlaceResolver 구현 자리 (카카오 로컬 API)
 :core:data           ④ Room + TransactionRepository 구현
+:core:report         ④ ReportWriter 구현 (LLM 중계 서버 호출)
 :feature:onboarding  ③ S-01 온보딩 (첫 실행)
 :feature:map         ③ 탭 1 지도: S-02 지도 홈, S-03 핀 상세, D-01, S-04 후보 고르기, S-07 온라인 결제
 :feature:placecheck  ③ 탭 2 장소 확인: S-05, S-06 매장 찾기, D-02
 :feature:report      ③ 탭 3 리포트: S-08 월간 리포트, S-09 공유 카드
+server/llm-relay     ④ LLM 중계 서버 (Cloudflare Workers, Gradle 밖). 월 집계 → Gemini → 칭호·요약
 ```
 
 데이터 흐름 (목표. 파이프라인은 아직 없다):
@@ -48,10 +51,14 @@ Android SDK 위치는 `ANDROID_HOME` 또는 `local.properties`의 `sdk.dir`로 �
 
 - 모듈 사이의 약속은 `core/model`의 `Contracts.kt`(인터페이스)와 `Models.kt`(모델)가 전부다. 화면은 이 인터페이스만 받고, 어떤 구현을 넣을지는 `app`의 `AppContainer` 한 곳에서 정한다. 구현이 없는 인터페이스에는 `core/model`의 `fake/` 구현이 들어가 있다.
 - 결제는 `PlaceStatus` 다섯 가지 중 하나다: `MAPPED`(지도 핀) / `AMBIGUOUS`(느낌표 핀, 후보 2곳+) / `UNMATCHED`(매칭실패함) / `PENDING_SEARCH`(매칭 대기) / `ONLINE`(온라인 목록). 사용자 동작에 따른 이동은 `PlaceTransitions`와 저장소의 `choosePlace`·`markNotHere`·`markOnline`·`markOffline`·`delete`가 분석서 2-3 표대로 처리한다. 분석서 밖에서 추가한 동작은 `markForgotten`([기억 안 나요]: 매칭실패함 + 이유 `FORGOTTEN`, 장소 확인 목록에서 빠지고 총액에는 남음)과 `clearAll`(데이터 초기화) 두 가지다. 학습기록·사용자 지정은 가맹점명(`merchantRaw`) 단위다.
+- 행정구역 `Region`은 시·도, 시·군·구, 동(`neighborhood`)이다. 동은 지도 핀 결제의 카카오 지번 주소에서 `Neighborhoods.fromAddress`로 뽑고, 리포트 칭호 앞 동네는 `Neighborhoods.top`(그 달 지도 핀 합계 1위 동)을 쓴다. 공유 카드의 동네 표시는 사용자가 켤 때만(기본 꺼짐). 동은 LLM 중계 서버로 보내지 않는다.
+- 월간 리포트 칭호·요약은 `ReportWriter`(④)가 LLM 중계 서버에서 받는다. 요청은 `MonthlyReportRules.request`로 만들고 월 집계만 담는다. 실패하면 `ReportResult.Failed`이고 화면은 집계만 보여 준다.
 - 취소는 별도 거래가 아니라 원래 결제의 `cancellations`에 붙고, 금액은 항상 `netAmount`(취소 반영)를 쓴다. 대상 결제 고르는 규칙은 `CancellationRules`.
 - 저장소 구현(가짜, Room)과 화면이 같이 쓰는 규칙은 `core/model/Rules.kt`의 순수 함수에 둔다 (월 범위는 한국 시간, 월 합계 `MonthSummary`). 규칙을 한쪽 구현에만 쓰지 않는다.
 - `local.properties`의 `wherepaid.useFakeData`(기본 `true`)가 `FakeTransactionRepository`(메모리 샘플)와 Room 구현을 고른다. CI 빌드는 `false`다.
 - **저장은 확정**: 로그인·앱 서버 없음. 기기 DB(Room)가 유일한 저장소이고 Android 자동 백업(`allowBackup`)으로 보존한다. 앱 밖으로 나가는 것은 분석서 NFR-03의 네 가지(카카오 로컬 API에 가맹점명·좌표, 카카오맵에 화면 좌표, LLM 중계 서버에 월별 집계, 본인 Google 백업)뿐이다. Firebase·원격 DB 의존성을 추가하지 않는다.
+- 중계 서버 주소·토큰은 `local.properties`의 `wherepaid.relayUrl`·`wherepaid.relayToken`(CI는 `WHEREPAID_RELAY_TOKEN` Secret)이다. 주소가 비면 `FakeReportWriter`를 쓴다.
+- LLM 중계 서버(`server/llm-relay`)는 저장하지 않고 본문을 로그로 남기지 않는다. 앱은 월 집계(합계, 건수, 카테고리별 합계)만 보내고 매장 이름·주소·좌표·결제 시각은 보내지 않는다. 요청·응답 형식은 그 폴더의 README가 기준이다. Gemini 키는 Workers 비밀 값과 `.dev.vars`에만 둔다.
 - 비밀 값(서명 키, 카카오 키)은 루트 `build.gradle.kts`가 `local.properties` → 환경변수 순으로 읽어 `rootProject.extra["secrets"]`에 둔다. 새 키가 필요하면 그 맵과 `local.properties.example`, `.github/workflows/android.yml`, README를 같이 고친다. 값이 비어 있어도 빌드는 돼야 한다.
 - 카카오맵: SDK 2.9.5부터 매니페스트 키를 읽지 않는다. 네이티브 앱 키는 `app`의 `BuildConfig.KAKAO_NATIVE_APP_KEY` → `WherePaidApp.onCreate`의 `initKakaoMap`으로 넣는다. 지도는 `feature:map`의 `KakaoMapLayer`(MapView를 감싼 것)만 쓰고, 화면은 지도를 슬롯으로 받아 미리보기에서는 `MapPlaceholder`를 쓴다. 핀 그림은 `core:designsystem`의 `MapPinBitmaps`.
 - 화면 번호(S-01 등)는 피그마 시안의 프레임 이름이다. 하단 탭과 경로는 `app`의 `MainActivity.kt`(`Routes`, `TopLevelDestination`)에 있고, 첫 실행 여부는 `OnboardingStore`.
@@ -68,12 +75,12 @@ Android SDK 위치는 `ANDROID_HOME` 또는 `local.properties`의 `sdk.dir`로 �
 - 화면 코드에서 색(`Color(0x…)`)·글자 크기·모서리를 직접 쓰지 않는다. `WherePaidTheme.colors`, `WherePaidTheme.typography`, `WherePaidShapes`와 `core:designsystem`의 컴포넌트를 쓰고, 없으면 피그마에서 값을 확인해 디자인 시스템에 먼저 추가한다. 금액·날짜 표기는 `format/Format.kt`("61,500원", "6.2만", "10.11 (토) 14:32").
 - Room 타입(Entity, Dao, Database)은 `core:data` 안에서 `internal`로 둔다.
 - `Contracts.kt`와 `Models.kt`를 바꾸면 모든 담당이 영향을 받는다. 다른 작업에 섞지 말고 그 변경만 담은 PR로 올려 팀 전체 확인을 받는다.
-- 담당: ① `core:notification` / ② `core:location`, `core:place` / ③ `feature:*`, `app`의 네비게이션·테마 / ④ `core:data`, `.github/`, 문서. 남의 모듈을 고쳐야 하면 PR 설명에 적는다.
+- 담당: ① `core:notification` / ② `core:location`, `core:place` / ③ `feature:*`, `app`의 네비게이션·테마 / ④ `core:data`, `core:report`, `server/`, `.github/`, 문서. 남의 모듈을 고쳐야 하면 PR 설명에 적는다.
 
 ### 개인정보와 데이터
 - **알림 원문을 저장하지 않는다.** 알림의 title, text, extras는 파싱에만 쓰고 DB, 파일, 로그(`Log.*`), 원격 어디에도 남기지 않는다. 저장하는 것은 파싱 결과(`Transaction`)뿐이다. 모델과 Entity에 원문 필드를 추가하지 않는다.
 - 실제 결제 기록, 팀원의 위치, 실제 알림 원문을 테스트·샘플 데이터·문서로 커밋하지 않는다. 파서 테스트 케이스는 가맹점과 금액을 바꾼 것을 쓴다.
-- 서명 키(`*.jks`, `*.keystore`), `local.properties`, `google-services.json`, API 키를 커밋하지 않는다.
+- 서명 키(`*.jks`, `*.keystore`), `local.properties`, `.dev.vars`, `google-services.json`, API 키를 커밋하지 않는다.
 
 ### 알림과 위치 (검증으로 확인된 것)
 - 대상은 토스(`viva.republica.toss`) 알림뿐이다. `sbn.isOngoing`과 `FLAG_GROUP_SUMMARY` 알림은 무시한다.

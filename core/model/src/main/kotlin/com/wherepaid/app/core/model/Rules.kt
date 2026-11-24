@@ -87,6 +87,82 @@ data class MonthSummary(
 
 data class PlaceTotal(val place: Place, val total: Long, val count: Int)
 
+/** 동(洞) 단위 규칙. 리포트 칭호의 동네와 공유 카드의 "동네 이름 표시"가 쓴다. */
+object Neighborhoods {
+    private val DONG = Regex("""^[가-힣]+?(\d+)?(동|가|읍|면)$""")
+    private val STREET = Regex("""(로|길)(\d+(번)?길)?$""")
+
+    /**
+     * 카카오 주소에서 동 이름을 뽑는다. 지번 주소만 동이 들어 있다.
+     * "서울 성동구 성수동2가 280" → "성수동", "서울 강남구 역삼1동 10" → "역삼동", 도로명 주소 → null.
+     */
+    fun fromAddress(address: String?): String? {
+        val tokens = address?.trim()?.split(Regex("""\s+""")) ?: return null
+        for (token in tokens.drop(1)) {
+            if (token.first().isDigit() || STREET.containsMatchIn(token)) return null
+            if (token.endsWith("구") || token.endsWith("시") || token.endsWith("군")) continue
+            if (!DONG.matches(token)) continue
+            return token
+                .replace(Regex("""\d+가$"""), "") // 성수동2가 → 성수동
+                .replace(Regex("""\d+(동|읍|면)$"""), "$1") // 역삼1동 → 역삼동
+                .ifEmpty { null }
+        }
+        return null
+    }
+
+    /** 그 달 지도 핀 결제(취소 반영) 합계가 가장 큰 동. 동을 아는 결제가 없으면 null. 같으면 이름순. */
+    fun top(transactions: List<Transaction>): String? = transactions
+        .filter { it.status == PlaceStatus.MAPPED }
+        .mapNotNull { tx -> tx.region?.neighborhood?.let { it to tx.netAmount } }
+        .groupBy({ it.first }, { it.second })
+        .map { (name, amounts) -> name to amounts.sum() }
+        .sortedWith(compareByDescending<Pair<String, Long>> { it.second }.thenBy { it.first })
+        .firstOrNull()?.first
+}
+
+/** "○월 리포트가 도착했어요" 배너 규칙 (FR-04). */
+object ReportArrival {
+    /**
+     * 지난달 리포트가 새로 도착했으면 그 달, 아니면 null.
+     * 지난달 결제가 있고, 지난달(또는 그 뒤) 리포트를 아직 안 봤을 때 도착한 것으로 본다.
+     */
+    fun arrivedMonth(thisMonth: YearMonth, lastMonthHasPayments: Boolean, lastSeen: YearMonth?): YearMonth? {
+        val lastMonth = thisMonth.minusMonths(1)
+        val seen = lastSeen != null && lastSeen >= lastMonth
+        return if (lastMonthHasPayments && !seen) lastMonth else null
+    }
+}
+
+/** 월간 리포트 요청 규칙 (FR-04). 리포트 화면과 테스트가 같이 쓴다. */
+object MonthlyReportRules {
+    const val MAX_CATEGORIES = 10
+    private const val OTHER = "기타"
+
+    /** 카카오 카테고리의 마지막 칸. "음식점 > 카페" → "카페", 비어 있으면 "기타". 20자로 자른다. */
+    fun categoryName(place: Place?): String =
+        place?.category?.split(">")?.last()?.trim()?.take(20)?.ifEmpty { null } ?: OTHER
+
+    /** 그 달 결제와 지난달 결제로 요청을 만든다. 지난달 결제가 없으면 [MonthlyReportRequest.previousMonthTotal]은 null. */
+    fun request(month: YearMonth, transactions: List<Transaction>, previousMonth: List<Transaction>): MonthlyReportRequest {
+        val summary = MonthSummary.of(transactions)
+        val categories = transactions
+            .filter { it.status == PlaceStatus.MAPPED }
+            .groupBy { categoryName(it.place) }
+            .map { (name, list) -> CategoryTotal(name, list.sumOf { it.netAmount }, list.size) }
+            .sortedWith(compareByDescending<CategoryTotal> { it.total }.thenBy { it.name })
+            .take(MAX_CATEGORIES)
+        val previous = MonthSummary.of(previousMonth)
+        return MonthlyReportRequest(
+            month = month,
+            offlineTotal = summary.offlineTotal,
+            onlineTotal = summary.onlineTotal,
+            paymentCount = transactions.size,
+            categories = categories,
+            previousMonthTotal = if (previousMonth.isEmpty()) null else previous.offlineTotal + previous.onlineTotal,
+        )
+    }
+}
+
 /** 두 좌표 사이 거리(m). 하버사인 공식. */
 fun distanceMeters(a: LatLng, b: LatLng): Double {
     val r = 6_371_000.0

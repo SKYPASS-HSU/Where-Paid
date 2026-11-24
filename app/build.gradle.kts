@@ -88,6 +88,7 @@ dependencies {
     implementation(project(":core:location"))
     implementation(project(":core:place"))
     implementation(project(":core:data"))
+    implementation(project(":core:report"))
     implementation(project(":feature:map"))
     implementation(project(":feature:onboarding"))
     implementation(project(":feature:placecheck"))
