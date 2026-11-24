@@ -20,6 +20,9 @@ jobs:
       # 카카오 키 (Settings → Secrets and variables → Actions). 없으면 빈 값으로 빌드된다.
       KAKAO_NATIVE_APP_KEY: ${{ secrets.KAKAO_NATIVE_APP_KEY }}
       KAKAO_REST_API_KEY: ${{ secrets.KAKAO_REST_API_KEY }}
+      # LLM 중계 서버 (월간 리포트). 토큰 Secret이 없으면 앱이 서버를 불러도 401로 실패하고 집계만 보여 준다.
+      WHEREPAID_RELAY_URL: https://wherepaid-llm-relay.skypass-hsu.workers.dev
+      WHEREPAID_RELAY_TOKEN: ${{ secrets.WHEREPAID_RELAY_TOKEN }}
       # CI 빌드는 기기 DB(Room)를 쓴다. 가짜 데이터는 로컬 개발용이다.
       WHEREPAID_USE_FAKE_DATA: 'false'
     steps:

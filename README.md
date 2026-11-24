@@ -62,6 +62,8 @@ Android Studio가 이미 만들어 둔 `local.properties`가 있다면 덮어쓰
 | `signing.storeFile`<br>`signing.storePassword`<br>`signing.keyAlias`<br>`signing.keyPassword` | 팀 공용 서명 키 | 내 PC의 기본 debug 키로 서명 (빌드할 때 경고가 나옵니다) |
 | `kakao.nativeAppKey` | 카카오맵 SDK | 빌드는 됨. 지도 기능을 만들 때 필요 |
 | `kakao.restApiKey` | 카카오 로컬 API(장소 검색) | 빌드는 됨. 장소 검색을 만들 때 필요 |
+| `wherepaid.relayUrl` | LLM 중계 서버 주소 (월간 리포트 칭호·요약). 예시 파일에 들어 있음 | 비우면 가짜 칭호·요약 |
+| `wherepaid.relayToken` | 중계 서버 앱 토큰. ④에게 개인톡으로 받음 | 서버가 401을 주고 리포트는 집계만 보임 |
 | `wherepaid.useFakeData` | `true`: 가짜 거래, `false`: 기기 DB(Room) | `true` |
 
 **누가 무엇을 채워야 하나요?**
@@ -114,6 +116,7 @@ core/notification/   ① 알림 수집·파싱        → PaymentSource
 core/location/       ② GPS 1회 측정          → LocationProvider
 core/place/          ② 카카오 장소 검색       → PlaceResolver
 core/data/           ④ 저장 (Room)           → TransactionRepository
+core/report/         ④ 리포트 칭호·요약   → ReportWriter (LLM 중계 서버)
 core/designsystem/   ③ 색·글꼴·공통 컴포넌트 (피그마 시안)
 feature/onboarding/  ③ 첫 실행 온보딩
 feature/map/         ③ 탭 1: 지도 홈, 핀 상세, 온라인 결제
@@ -126,7 +129,7 @@ feature/report/      ③ 탭 3: 월간 리포트, 공유 카드
 | ① 알림 수집·파싱 | `core/notification` |
 | ② 위치·장소 매칭 | `core/location`, `core/place` |
 | ③ 화면·디자인 | `feature/*`, `app`의 네비게이션과 테마 |
-| ④ 설계·데이터·배포 | `core/data`, `.github/`, 문서 |
+| ④ 설계·데이터·배포 | `core/data`, `core/report`, `server/`, `.github/`, 문서 |
 
 ### 모듈 간 약속
 모든 모듈은 [`core/model`](core/model/src/main/kotlin/com/wherepaid/app/core/model)만 바라봅니다.

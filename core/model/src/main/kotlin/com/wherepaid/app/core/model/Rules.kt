@@ -120,6 +120,19 @@ object Neighborhoods {
         .firstOrNull()?.first
 }
 
+/** "○월 리포트가 도착했어요" 배너 규칙 (FR-04). */
+object ReportArrival {
+    /**
+     * 지난달 리포트가 새로 도착했으면 그 달, 아니면 null.
+     * 지난달 결제가 있고, 지난달(또는 그 뒤) 리포트를 아직 안 봤을 때 도착한 것으로 본다.
+     */
+    fun arrivedMonth(thisMonth: YearMonth, lastMonthHasPayments: Boolean, lastSeen: YearMonth?): YearMonth? {
+        val lastMonth = thisMonth.minusMonths(1)
+        val seen = lastSeen != null && lastSeen >= lastMonth
+        return if (lastMonthHasPayments && !seen) lastMonth else null
+    }
+}
+
 /** 월간 리포트 요청 규칙 (FR-04). 리포트 화면과 테스트가 같이 쓴다. */
 object MonthlyReportRules {
     const val MAX_CATEGORIES = 10

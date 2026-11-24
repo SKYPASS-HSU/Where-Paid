@@ -151,7 +151,10 @@ private fun WherePaidNav(container: AppContainer) {
             }
             composable(Routes.REPORT) {
                 ReportScreen(
-                    onResetData = { scope.launch { container.transactionRepository.clearAll() } },
+                    onResetData = {
+                        container.reportArrivalStore.clear()
+                        scope.launch { container.transactionRepository.clearAll() }
+                    },
                     modifier = Modifier.statusBarsPadding(),
                 )
             }
