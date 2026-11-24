@@ -65,4 +65,67 @@ class RulesTest {
         val d = distanceMeters(LatLng(37.5665, 126.9780), LatLng(37.5665, 126.9790))
         assertTrue(d in 85.0..95.0)
     }
+
+    @Test
+    fun `카카오 지번 주소에서 동을 뽑는다`() {
+        assertEquals("성수동", Neighborhoods.fromAddress("서울 성동구 성수동2가 280"))
+        assertEquals("역삼동", Neighborhoods.fromAddress("서울 강남구 역삼1동 10-3"))
+        assertEquals("정자동", Neighborhoods.fromAddress("경기 성남시 분당구 정자동 1"))
+        assertEquals("종로", Neighborhoods.fromAddress("서울 종로구 종로1가 1"))
+        assertNull(Neighborhoods.fromAddress("서울 성동구 아차산로 100"))
+        assertNull(Neighborhoods.fromAddress("서울 강남구 테헤란로4길 6"))
+        assertNull(Neighborhoods.fromAddress(""))
+        assertNull(Neighborhoods.fromAddress(null))
+    }
+
+    @Test
+    fun `가장 많이 쓴 동은 지도 핀 결제의 취소 반영 합계로 고른다`() {
+        val seongsu = Region("서울특별시", "성동구", "성수동")
+        val samseon = Region("서울특별시", "성북구", "삼선동")
+        fun mapped(id: String, amount: Long, region: Region?, canceled: Long = 0) =
+            payment(id, amount, 1, canceled).copy(status = PlaceStatus.MAPPED, region = region)
+
+        val txs = listOf(
+            mapped("a", 10_000, seongsu, canceled = 6_000), // 성수동 4,000
+            mapped("b", 5_000, samseon), // 삼선동 5,000
+            mapped("c", 9_000, null), // 동 모름
+            payment("d", 50_000, 1).copy(status = PlaceStatus.ONLINE, region = seongsu), // 지도 핀 아님
+        )
+
+        assertEquals("삼선동", Neighborhoods.top(txs))
+        assertNull(Neighborhoods.top(txs.filter { it.region == null }))
+    }
+
+    @Test
+    fun `리포트 요청은 월 집계만 담고 카테고리는 지도 핀 결제로 묶는다`() {
+        val summary = MonthSummary.of(sample)
+        val request = MonthlyReportRules.request(month, sample, previousMonth = emptyList())
+
+        assertEquals(summary.offlineTotal, request.offlineTotal)
+        assertEquals(summary.onlineTotal, request.onlineTotal)
+        assertEquals(sample.size, request.paymentCount)
+        assertNull(request.previousMonthTotal)
+        assertTrue(request.categories.size <= MonthlyReportRules.MAX_CATEGORIES)
+        assertEquals(request.categories.sortedByDescending { it.total }, request.categories)
+        val mapped = sample.filter { it.status == PlaceStatus.MAPPED }
+        assertEquals(mapped.sumOf { it.netAmount }, request.categories.sumOf { it.total })
+        assertEquals(mapped.size, request.categories.sumOf { it.count })
+    }
+
+    @Test
+    fun `카테고리는 카카오 카테고리의 마지막 칸, 없으면 기타`() {
+        val place = Place("p", "가게", LatLng(0.0, 0.0), "음식점 > 카페", null)
+        assertEquals("카페", MonthlyReportRules.categoryName(place))
+        assertEquals("편의점", MonthlyReportRules.categoryName(place.copy(category = "편의점")))
+        assertEquals("기타", MonthlyReportRules.categoryName(place.copy(category = null)))
+        assertEquals("기타", MonthlyReportRules.categoryName(place.copy(category = " ")))
+        assertEquals("기타", MonthlyReportRules.categoryName(null))
+    }
+
+    @Test
+    fun `지난달 결제가 있으면 지난달 전체 합계를 넣는다`() {
+        val previous = listOf(payment("x", 30_000, 1), payment("y", 20_000, 2, canceled = 5_000))
+        val request = MonthlyReportRules.request(month, sample, previous)
+        assertEquals(45_000L, request.previousMonthTotal)
+    }
 }

@@ -6,7 +6,7 @@
     "entities": [
       {
         "tableName": "transactions",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `amount` INTEGER NOT NULL, `merchantRaw` TEXT NOT NULL, `cardName` TEXT, `payType` TEXT, `paidAt` INTEGER NOT NULL, `dedupeKey` TEXT, `latitude` REAL, `longitude` REAL, `locationAccuracyM` REAL, `province` TEXT, `district` TEXT, `status` TEXT NOT NULL, `placeId` TEXT, `unmatchedReason` TEXT, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `amount` INTEGER NOT NULL, `merchantRaw` TEXT NOT NULL, `cardName` TEXT, `payType` TEXT, `paidAt` INTEGER NOT NULL, `dedupeKey` TEXT, `latitude` REAL, `longitude` REAL, `locationAccuracyM` REAL, `province` TEXT, `district` TEXT, `neighborhood` TEXT, `status` TEXT NOT NULL, `placeId` TEXT, `unmatchedReason` TEXT, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -70,6 +70,11 @@
           {
             "fieldPath": "district",
             "columnName": "district",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "neighborhood",
+            "columnName": "neighborhood",
             "affinity": "TEXT"
           },
           {
