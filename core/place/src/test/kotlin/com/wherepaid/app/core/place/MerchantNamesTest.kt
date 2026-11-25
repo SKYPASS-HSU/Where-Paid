@@ -43,6 +43,7 @@ class MerchantNamesTest {
         assertTrue(MerchantNames.isPaymentGateway("KCP"))
         assertTrue(MerchantNames.isPaymentGateway("NHN KCP"))
         assertTrue(MerchantNames.isPaymentGateway("구글페이먼트코리아"))
+        assertTrue(MerchantNames.isPaymentGateway("네이버페이"))
         assertTrue(MerchantNames.isPaymentGateway("넷플릭스(자동결제)"))
         assertFalse(MerchantNames.isPaymentGateway("스타벅스 성수역점"))
     }
