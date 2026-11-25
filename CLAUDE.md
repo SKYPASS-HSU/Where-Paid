@@ -20,6 +20,7 @@ PR 리뷰어(Claude Review 워크플로)도 이 파일을 기준으로 리뷰한
 ./gradlew :core:data:testDebugUnitTest --tests "*.SomeTest.someMethod"            # Android 모듈의 테스트 하나
 ./gradlew :app:lintDebug             # lint만
 ./gradlew :core:data:connectedDebugAndroidTest   # Room 저장소 테스트 (에뮬레이터/기기 필요)
+./gradlew :core:location:connectedDebugAndroidTest   # 실제 위치 1회 측정 (위치 서비스 켜진 에뮬레이터/기기)
 ./gradlew installDebug               # 연결된 기기/에뮬레이터에 설치
 adb shell am start -n com.wherepaid.app/.MainActivity
 cd server/llm-relay && npm install && npm test   # LLM 중계 서버 테스트 (Node.js 20+)
@@ -34,7 +35,7 @@ Android SDK 위치는 `ANDROID_HOME` 또는 `local.properties`의 `sdk.dir`로 �
 :core:model          순수 Kotlin. 모델 + 인터페이스 5개(Contracts.kt) + 가짜 구현(fake/)
 :core:designsystem   피그마 시안의 색·글꼴(Pretendard)·모양 토큰, 공통 컴포넌트, 금액·날짜 표기
 :core:notification   ① PaymentSource 구현 자리 (알림 수집·파싱)
-:core:location       ② LocationProvider 구현 자리 (GPS 1회 측정)
+:core:location       ② FusedLocationProvider(GPS 1회 측정), LocationPermissions(권한 확인·설정 이동), LocationAccessMonitor("항상 허용" 배너)
 :core:place          ② PlaceResolver 구현 자리 (카카오 로컬 API)
 :core:data           ④ Room + TransactionRepository 구현
 :core:report         ④ ReportWriter 구현 (LLM 중계 서버 호출)
