@@ -37,4 +37,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
 
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    // 단위 테스트(JVM)에서는 Android의 org.json이 비어 있어 실제 구현을 넣는다
+    testImplementation(libs.json)
 }

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- ② 카카오 로컬 API 장소 검색. 보내는 것은 가맹점명(또는 검색어)과 결제 좌표뿐이다 (NFR-03). -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+</manifest>

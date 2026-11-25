@@ -36,7 +36,7 @@ Android SDK 위치는 `ANDROID_HOME` 또는 `local.properties`의 `sdk.dir`로 �
 :core:designsystem   피그마 시안의 색·글꼴(Pretendard)·모양 토큰, 공통 컴포넌트, 금액·날짜 표기
 :core:notification   ① PaymentSource 구현 자리 (알림 수집·파싱)
 :core:location       ② FusedLocationProvider(GPS 1회 측정), LocationPermissions(권한 확인·설정 이동), LocationAccessMonitor("항상 허용" 배너)
-:core:place          ② PlaceResolver 구현 자리 (카카오 로컬 API)
+:core:place          ② KakaoPlaceResolver(카카오 로컬 API, 반경 300 m), MerchantNames(별칭사전·PG사 리스트·이름 일치 규칙)
 :core:data           ④ Room + TransactionRepository 구현
 :core:report         ④ ReportWriter 구현 (LLM 중계 서버 호출)
 :feature:onboarding  ③ S-01 온보딩 (첫 실행)
