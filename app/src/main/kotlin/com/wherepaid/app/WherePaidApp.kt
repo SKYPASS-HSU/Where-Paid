@@ -16,6 +16,7 @@ import com.wherepaid.app.core.model.fake.FakePaymentSource
 import com.wherepaid.app.core.model.fake.FakePlaceResolver
 import com.wherepaid.app.core.model.fake.FakeReportWriter
 import com.wherepaid.app.core.model.fake.FakeTransactionRepository
+import com.wherepaid.app.core.place.createPlaceResolver
 import com.wherepaid.app.core.report.createReportWriter
 import com.wherepaid.app.feature.map.home.initKakaoMap
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -86,8 +87,8 @@ class AppContainer(context: Context) {
     /** 결제 알림마다 위치 1회 측정 (고정확도, 캐시 금지, 10초). 가짜 데이터 모드와 상관없이 실제 측정한다. */
     val locationProvider: LocationProvider by lazy { FusedLocationProvider(context) }
 
-    // TODO(②): :core:place 구현으로 교체
-    val placeResolver: PlaceResolver by lazy { FakePlaceResolver() }
+    /** local.properties의 kakao.restApiKey가 있으면 카카오 로컬 API, 없으면 샘플 장소에서 찾는 가짜. */
+    val placeResolver: PlaceResolver by lazy { createPlaceResolver() ?: FakePlaceResolver() }
 
     /** local.properties의 wherepaid.relayUrl이 있으면 LLM 중계 서버, 없으면 가짜 칭호·요약. */
     val reportWriter: ReportWriter by lazy { createReportWriter() ?: FakeReportWriter() }
