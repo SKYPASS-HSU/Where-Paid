@@ -11,3 +11,53 @@ package com.wherepaid.app.core.notification
 // 자세한 내용: 인계 문서 §3, §5 (README.md의 링크)
 //
 // 구현이 생기면 :app의 AppContainer에서 FakePaymentSource를 바꿔 끼운다.
+
+import com.wherepaid.app.core.model.ParsedPayment
+import com.wherepaid.app.core.model.PaymentSource
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+
+/**
+ * NotificationListenerService가 파싱한 결제/취소를
+ * 앱의 결제 파이프라인으로 전달한다.
+ */
+object NotificationPaymentSource : PaymentSource {
+
+    private val flow =
+        MutableSharedFlow<ParsedPayment>(
+            replay = 0,
+            extraBufferCapacity = 16,
+        )
+
+    override val payments: Flow<ParsedPayment> =
+        flow.asSharedFlow()
+
+    /*
+     * 같은 Notification이 재전달되는 것을 막기 위한
+     * 최근 dedupeKey 목록.
+     */
+    private val seenKeys = LinkedHashSet<String>()
+
+    internal fun emit(payment: ParsedPayment) {
+        val isNew =
+            synchronized(seenKeys) {
+                if (!seenKeys.add(payment.dedupeKey)) {
+                    false
+                } else {
+                    /*
+                     * 무한히 쌓이지 않도록 최근 256개만 유지.
+                     */
+                    if (seenKeys.size > 256) {
+                        seenKeys.remove(seenKeys.first())
+                    }
+
+                    true
+                }
+            }
+
+        if (isNew) {
+            flow.tryEmit(payment)
+        }
+    }
+}
