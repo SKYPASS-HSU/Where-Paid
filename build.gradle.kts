@@ -35,5 +35,7 @@ val secrets: Map<String, String> by extra(
         "kakao.nativeAppKey" to secret("kakao.nativeAppKey", "KAKAO_NATIVE_APP_KEY"),
         "kakao.restApiKey" to secret("kakao.restApiKey", "KAKAO_REST_API_KEY"),
         "wherepaid.useFakeData" to secret("wherepaid.useFakeData", "WHEREPAID_USE_FAKE_DATA"),
+        "wherepaid.relayUrl" to secret("wherepaid.relayUrl", "WHEREPAID_RELAY_URL"),
+        "wherepaid.relayToken" to secret("wherepaid.relayToken", "WHEREPAID_RELAY_TOKEN"),
     )
 )

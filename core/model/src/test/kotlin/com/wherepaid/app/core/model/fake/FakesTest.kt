@@ -1,9 +1,11 @@
 package com.wherepaid.app.core.model.fake
 
 import com.wherepaid.app.core.model.KOREA_ZONE
+import com.wherepaid.app.core.model.LatLng
 import com.wherepaid.app.core.model.LocationFailure
 import com.wherepaid.app.core.model.LocationResult
 import com.wherepaid.app.core.model.MonthSummary
+import com.wherepaid.app.core.model.Place
 import com.wherepaid.app.core.model.PlaceStatus
 import com.wherepaid.app.core.model.UnmatchedReason
 import com.wherepaid.app.core.model.UserDesignation
@@ -95,6 +97,52 @@ class FakesTest {
     }
 
     @Test
+    fun `기억 안 나요는 장소 확인에서 빼고 총액에는 남긴다`() = runTest {
+        val repository = repository()
+        val id = idOf("GS25")
+        val before = MonthSummary.of(repository.observeMonth(month).first())
+
+        repository.markForgotten(id)
+
+        val tx = repository.get(id)!!
+        assertEquals(PlaceStatus.UNMATCHED, tx.status)
+        assertEquals(UnmatchedReason.FORGOTTEN, tx.unmatchedReason)
+        assertFalse(tx.needsPlace)
+        assertFalse(repository.observeNeedsPlace().first().any { it.id == id })
+        val after = MonthSummary.of(repository.observeMonth(month).first())
+        assertEquals(before.offlineTotal, after.offlineTotal)
+        assertEquals(before.needsPlaceCount - 1, after.needsPlaceCount)
+        assertNull(repository.learnedPlace("GS25"))
+        assertNull(repository.designation("GS25"))
+    }
+
+    @Test
+    fun `기억 안 나요로 넘긴 결제도 나중에 장소를 고를 수 있다`() = runTest {
+        val repository = repository()
+        val id = idOf("GS25")
+        repository.markForgotten(id)
+
+        repository.choosePlace(id, SampleData.gs25Candidates[0])
+
+        assertEquals(PlaceStatus.MAPPED, repository.get(id)!!.status)
+        assertNull(repository.get(id)!!.unmatchedReason)
+    }
+
+    @Test
+    fun `초기화하면 결제와 학습기록과 사용자 지정이 모두 사라진다`() = runTest {
+        val repository = repository()
+        repository.choosePlace(idOf("GS25"), SampleData.gs25Candidates[0])
+        repository.markOnline(idOf("홍길동상회"))
+
+        repository.clearAll()
+
+        assertTrue(repository.observeMonth(month).first().isEmpty())
+        assertTrue(repository.observeNeedsPlace().first().isEmpty())
+        assertNull(repository.learnedPlace("GS25"))
+        assertNull(repository.designation("홍길동상회"))
+    }
+
+    @Test
     fun `같은 알림 재전달은 저장하지 않는다`() = runTest {
         val repository = repository()
         val existing = SampleData.transactions(month).first()
@@ -136,5 +184,19 @@ class FakesTest {
     @Test
     fun `학습기록이 없으면 null`() = runTest {
         assertNull(repository().learnedPlace("GS25"))
+    }
+
+    @Test
+    fun `자동 매칭은 매칭 대기에서 빼고 학습기록은 남기지 않는다`() = runTest {
+        val repository = repository()
+        val id = idOf("씨유 영등포아크로타")
+        val store = Place("kakao-test-1", "CU 영등포아크로타점", LatLng(37.52, 126.90), "편의점", null)
+        assertEquals(listOf(id), repository.pendingSearch().map { it.id })
+
+        repository.updateMatch(id, PlaceStatus.MAPPED, store, emptyList(), null)
+
+        assertTrue(repository.pendingSearch().isEmpty())
+        assertEquals(store, repository.get(id)!!.place)
+        assertNull(repository.learnedPlace("씨유 영등포아크로타"))
     }
 }

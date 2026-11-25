@@ -1,6 +1,7 @@
 package com.wherepaid.app.feature.placecheck.find
 
 import com.wherepaid.app.core.model.PlaceStatus
+import com.wherepaid.app.core.model.UnmatchedReason
 import com.wherepaid.app.core.model.UserDesignation
 import com.wherepaid.app.core.model.fake.FakePlaceResolver
 import com.wherepaid.app.core.model.fake.FakeTransactionRepository
@@ -121,6 +122,17 @@ class FindPlaceTest {
 
         assertEquals(PlaceStatus.ONLINE, repository.get(kfc.id)!!.status)
         assertEquals(UserDesignation.ONLINE, repository.designation(kfc.merchantRaw))
+        assertTrue(vm.state.value.finished)
+    }
+
+    @Test
+    fun `기억 안 나요는 장소 확인에서 빼고 닫는다`() = runTest(dispatcher) {
+        val vm = viewModel()
+        vm.markForgotten()
+        advanceUntilIdle()
+
+        assertEquals(UnmatchedReason.FORGOTTEN, repository.get(kfc.id)!!.unmatchedReason)
+        assertFalse(repository.get(kfc.id)!!.needsPlace)
         assertTrue(vm.state.value.finished)
     }
 

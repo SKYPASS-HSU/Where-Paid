@@ -1,5 +1,7 @@
 package com.wherepaid.app.core.model
 
+import java.time.YearMonth
+
 /**
  * 모듈 사이를 오가는 모델. 요구사항 분석서(1-6 용어, 2-3 결제 상태 이동표) 기준이다.
  * 필드를 바꾸면 모든 모듈이 영향을 받으므로 그 변경만 담은 PR로 팀 전체 확인을 받는다.
@@ -54,6 +56,12 @@ data class Region(
     val province: String,
     /** 시·군·구. 예: "성동구" */
     val district: String?,
+    /**
+     * 읍·면·동. 예: "성수동". 리포트 칭호 앞에 붙인다 ("성수동 카페 순례자", [Neighborhoods.top]).
+     * 지도 핀 결제의 카카오 주소에서 뽑는다 ([Neighborhoods.fromAddress]). 모르면 null.
+     * LLM 중계 서버에는 보내지 않는다 (NFR-03).
+     */
+    val neighborhood: String? = null,
 )
 
 /**
@@ -93,6 +101,12 @@ enum class UnmatchedReason {
 
     /** 온라인 목록에서 [오프라인이에요]. "오프라인 결제로 옮김" */
     MARKED_OFFLINE,
+
+    /**
+     * 후보 고르기·매장 찾기에서 [기억 안 나요]. 장소 확인 목록과 지도에서 빠지고 총액에는 남는다.
+     * 다시 장소를 정하려면 [TransactionRepository.choosePlace]를 그대로 쓴다.
+     */
+    FORGOTTEN,
 }
 
 /** 사용자가 가맹점명 단위로 정한 온라인/오프라인 (분석서 1-6 사용자 지정). */
@@ -134,7 +148,42 @@ data class Transaction(
     /** 취소를 뺀 금액. 합계·핀 크기·리포트는 모두 이 값을 쓴다. */
     val netAmount: Long get() = amount - cancellations.sumOf { it.amount }
 
-    /** 장소 확인 화면에 나오는 결제인지 (느낌표 핀, 매칭실패함, 매칭 대기). */
+    /** 장소 확인 화면에 나오는 결제인지 (느낌표 핀, 매칭실패함, 매칭 대기). [기억 안 나요]로 넘긴 결제는 빠진다. */
     val needsPlace: Boolean
-        get() = status == PlaceStatus.AMBIGUOUS || status == PlaceStatus.UNMATCHED || status == PlaceStatus.PENDING_SEARCH
+        get() = when (status) {
+            PlaceStatus.AMBIGUOUS, PlaceStatus.PENDING_SEARCH -> true
+            PlaceStatus.UNMATCHED -> unmatchedReason != UnmatchedReason.FORGOTTEN
+            PlaceStatus.MAPPED, PlaceStatus.ONLINE -> false
+        }
+}
+
+/**
+ * 월간 리포트 칭호·요약 요청 (FR-04). LLM 중계 서버(`server/llm-relay`)로 나가는 것은 이 월 집계뿐이다 (NFR-03).
+ * 매장 이름, 주소, 좌표, 동, 결제 시각은 넣지 않는다. 만드는 규칙은 [MonthlyReportRules.request].
+ */
+data class MonthlyReportRequest(
+    val month: YearMonth,
+    /** 취소 반영. [MonthSummary.offlineTotal]과 같다. */
+    val offlineTotal: Long,
+    /** 취소 반영. [MonthSummary.onlineTotal]과 같다. */
+    val onlineTotal: Long,
+    val paymentCount: Int,
+    /** 지도 핀 결제를 카카오 카테고리 마지막 칸("음식점 > 카페" → "카페")으로 묶은 합계. 큰 순, 최대 10개. */
+    val categories: List<CategoryTotal>,
+    /** 지난달 전체 합계(오프라인 + 온라인). 지난달 결제가 없으면 null. */
+    val previousMonthTotal: Long?,
+)
+
+data class CategoryTotal(val name: String, val total: Long, val count: Int)
+
+/** 리포트 칭호·요약 결과. 실패하면 화면은 집계만 보여 주고 [다시 시도]를 둔다 (FR-04, 시안 S-08 오류). */
+sealed interface ReportResult {
+    /**
+     * [title]은 소비 성향만 담은 칭호(12자 이내, 동네 없음). 화면은 앞에 [Neighborhoods.top]을 붙인다
+     * ("성수동" + "카페 순례자"). [summary]는 2~3문장 요약(150자 이내).
+     */
+    data class Success(val title: String, val summary: String) : ReportResult
+
+    /** 인터넷 없음, 서버·LLM 실패, 한도 초과. */
+    data object Failed : ReportResult
 }

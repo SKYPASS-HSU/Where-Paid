@@ -67,4 +67,15 @@ class CandidatePickerTest {
         CandidatePickerViewModel(repository, ediya.id).markOnline().join()
         assertEquals(PlaceStatus.ONLINE, repository.get(ediya.id)!!.status)
     }
+
+    @Test
+    fun `기억 안 나요는 장소 확인에서 빼고 시트를 닫는다`() = runTest {
+        val repository = FakeTransactionRepository(sample)
+
+        CandidatePickerViewModel(repository, gs25.id).markForgotten().join()
+
+        val tx = repository.get(gs25.id)!!
+        assertEquals(UnmatchedReason.FORGOTTEN, tx.unmatchedReason)
+        assertEquals(CandidatePickerUiState.Done, toCandidatePickerUiState(tx, month.atDay(11)))
+    }
 }

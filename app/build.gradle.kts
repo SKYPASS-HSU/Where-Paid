@@ -34,8 +34,9 @@ android {
         versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1
         versionName = System.getenv("VERSION_NAME") ?: "0.1.0"
 
-        // 카카오맵 SDK가 읽는 네이티브 앱 키. 비어 있어도 빌드는 된다.
-        manifestPlaceholders["kakaoNativeAppKey"] = secrets.getValue("kakao.nativeAppKey")
+        // 카카오맵 SDK 네이티브 앱 키. SDK 2.9.5부터 매니페스트를 읽지 않아 WherePaidApp에서 KakaoMapSdk.init으로 넣는다.
+        // 비어 있어도 빌드는 되고, 지도 자리에 "지도를 불러오지 못했어요"가 나온다.
+        buildConfigField("String", "KAKAO_NATIVE_APP_KEY", "\"${secrets.getValue("kakao.nativeAppKey")}\"")
 
         // true(기본): 가짜 데이터, false: 기기 DB(Room). local.properties의 wherepaid.useFakeData
         buildConfigField("boolean", "USE_FAKE_DATA", "${secrets.getValue("wherepaid.useFakeData") != "false"}")
@@ -87,6 +88,7 @@ dependencies {
     implementation(project(":core:location"))
     implementation(project(":core:place"))
     implementation(project(":core:data"))
+    implementation(project(":core:report"))
     implementation(project(":feature:map"))
     implementation(project(":feature:onboarding"))
     implementation(project(":feature:placecheck"))

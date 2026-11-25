@@ -42,6 +42,7 @@ import java.time.YearMonth
 /**
  * S-04 느낌표 핀 후보 고르기 시트. 지도의 느낌표 핀과 S-05 [여기예요]에서 연다.
  * 무엇을 고르든 저장 후 결제가 느낌표 핀에서 빠지면 [onDismiss]로 닫힌다.
+ * [기억 안 나요]는 시안에 없는 버튼이다 (매칭실패함 + 장소 확인에서 제외).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,6 +73,7 @@ fun CandidatePickerRoute(
             onChoose = viewModel::choose,
             onOnline = viewModel::markOnline,
             onNotHere = viewModel::markNotHere,
+            onForgot = viewModel::markForgotten,
             modifier = Modifier.navigationBarsPadding(),
         )
     }
@@ -84,6 +86,7 @@ fun CandidatePickerContent(
     onChoose: (Place) -> Unit,
     onOnline: () -> Unit,
     onNotHere: () -> Unit,
+    onForgot: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = WherePaidTheme.colors
@@ -107,6 +110,8 @@ fun CandidatePickerContent(
             WherePaidButton("온라인 결제예요", onOnline, Modifier.weight(1f), ButtonStyle.Muted, ButtonSize.Medium)
             WherePaidButton("여기 아니에요", onNotHere, Modifier.weight(1f), ButtonStyle.Muted, ButtonSize.Medium)
         }
+        // 시안 밖 추가 (보충 B): 장소 확인 목록에서 뺀다. 총액에는 남는다.
+        WherePaidButton("기억 안 나요", onForgot, Modifier.fillMaxWidth(), ButtonStyle.Muted, ButtonSize.Small)
     }
 }
 
@@ -136,5 +141,5 @@ private fun CandidatePickerPreview() {
     val month = YearMonth.now()
     val gs25 = SampleData.transactions(month).first { it.status == PlaceStatus.AMBIGUOUS && it.merchantRaw == "GS25" }
     val state = toCandidatePickerUiState(gs25, month.atDay(11)) as CandidatePickerUiState.Picking
-    WherePaidTheme { CandidatePickerContent(state, {}, {}, {}) }
+    WherePaidTheme { CandidatePickerContent(state, {}, {}, {}, {}) }
 }

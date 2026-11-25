@@ -31,6 +31,15 @@ interface PlaceResolver {
 }
 
 /**
+ * ④ 월간 리포트 칭호·요약 (:core:report). LLM 중계 서버를 부른다. 월 집계만 보낸다 (NFR-03).
+ * 리포트 화면(S-08)과 공유 카드(S-09)가 쓴다.
+ */
+interface ReportWriter {
+    /** 실패해도 예외를 던지지 않고 [ReportResult.Failed]를 돌려준다. */
+    suspend fun write(request: MonthlyReportRequest): ReportResult
+}
+
+/**
  * ④ 저장 (:core:data). 기기 DB(Room)가 원본이고 Android 자동 백업으로 보존한다. 로그인·앱 서버는 없다.
  * 사용자 동작 함수는 분석서 2-3 결제 상태 이동표를 그대로 따른다.
  */
@@ -90,4 +99,13 @@ interface TransactionRepository {
 
     /** [삭제] → 결제 기록 삭제. 학습기록은 유지한다. */
     suspend fun delete(id: String)
+
+    /** 후보 고르기·매장 찾기의 [기억 안 나요] → 장소 확인 목록에서 뺀다. 학습기록·사용자 지정은 남기지 않는다. */
+    suspend fun markForgotten(id: String)
+
+    /**
+     * 데이터 초기화. 결제·취소·후보·매장·학습기록·사용자 지정을 모두 지운다. 되돌릴 수 없다.
+     * 온보딩 완료 여부 같은 앱 설정은 지우지 않는다.
+     */
+    suspend fun clearAll()
 }

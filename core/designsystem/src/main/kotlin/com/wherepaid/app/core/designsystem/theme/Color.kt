@@ -12,12 +12,18 @@ data class WherePaidColors(
     /** 주 색: 기본 버튼, 지도 핀, 선택된 탭, 강조 금액. */
     val primary: Color = Color(0xFFFF5A36),
     val onPrimary: Color = Color(0xFFFFFFFF),
+    /** 주 색의 연한 바탕 (지도 홈 빈 상태 기호). */
+    val primaryContainer: Color = Color(0xFFFBEDE9),
+    /** 어두운 바탕: 지도 위 배너(자동 기록 꺼짐, 위치 권한), 장소 확인 칩. 글자는 흰색. */
+    val inverseSurface: Color = Color(0xFF191F28),
 
     val textPrimary: Color = Color(0xFF191F28),
     /** 보조 문구, 비활성 탭, 금액 옆 설명. */
     val textSecondary: Color = Color(0xFF6B7684),
     /** 다이얼로그·빈 상태 본문처럼 읽어야 하는 보조 문구. */
     val textTertiary: Color = Color(0xFF4E5968),
+    /** 가장 옅은 안내 글자 (지도 카드의 "온라인 결제 88,900원은"). */
+    val textHint: Color = Color(0xFF8B95A1),
 
     val background: Color = Color(0xFFFFFFFF),
     /** 회색 면: 보조 버튼, 칩, 구역 구분 띠, 권한 카드. */

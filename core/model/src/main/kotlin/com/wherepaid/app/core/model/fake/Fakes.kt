@@ -5,12 +5,15 @@ import com.wherepaid.app.core.model.CancellationRules
 import com.wherepaid.app.core.model.LatLng
 import com.wherepaid.app.core.model.LocationProvider
 import com.wherepaid.app.core.model.LocationResult
+import com.wherepaid.app.core.model.MonthlyReportRequest
 import com.wherepaid.app.core.model.ParsedPayment
 import com.wherepaid.app.core.model.PaymentSource
 import com.wherepaid.app.core.model.Place
 import com.wherepaid.app.core.model.PlaceResolver
 import com.wherepaid.app.core.model.PlaceStatus
 import com.wherepaid.app.core.model.PlaceTransitions
+import com.wherepaid.app.core.model.ReportResult
+import com.wherepaid.app.core.model.ReportWriter
 import com.wherepaid.app.core.model.Transaction
 import com.wherepaid.app.core.model.TransactionRepository
 import com.wherepaid.app.core.model.UnmatchedReason
@@ -36,6 +39,21 @@ class FakePaymentSource : PaymentSource {
     override val payments: Flow<ParsedPayment> = flow
 
     suspend fun emit(payment: ParsedPayment) = flow.emit(payment)
+}
+
+/** 항상 [result]를 돌려주고, 받은 요청을 [requests]에 남긴다. */
+class FakeReportWriter(
+    var result: ReportResult = ReportResult.Success(
+        title = "카페 순례자",
+        summary = "오프라인 소비의 31%가 카페였어요. 온라인 결제는 전체의 22%였고, 지난달보다 15% 더 썼어요.",
+    ),
+) : ReportWriter {
+    val requests = mutableListOf<MonthlyReportRequest>()
+
+    override suspend fun write(request: MonthlyReportRequest): ReportResult {
+        requests += request
+        return result
+    }
 }
 
 /** 항상 [result]를 돌려준다. */
@@ -136,6 +154,14 @@ class FakeTransactionRepository(
 
     override suspend fun delete(id: String) {
         transactions.update { it - id }
+    }
+
+    override suspend fun markForgotten(id: String) = modify(id, PlaceTransitions::markForgotten)
+
+    override suspend fun clearAll() {
+        transactions.value = emptyMap()
+        learned.value = emptyMap()
+        designations.value = emptyMap()
     }
 
     private fun put(tx: Transaction) = transactions.update { it + (tx.id to tx) }
